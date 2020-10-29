@@ -1,0 +1,61 @@
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /glade/scratch/jframe/nh-libtorch/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_0bb8f/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_0bb8f.dir/build.make CMakeFiles/cmTC_0bb8f.dir/build
+gmake[1]: Entering directory '/glade/scratch/jframe/nh-libtorch/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_0bb8f.dir/src.c.o
+/glade/u/apps/ch/opt/ncarcompilers/0.5.0/gnu/10.1.0/gcc   -DCMAKE_HAVE_LIBC_PTHREAD -o CMakeFiles/cmTC_0bb8f.dir/src.c.o -c /glade/scratch/jframe/nh-libtorch/build/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_0bb8f
+/glade/u/apps/ch/opt/cmake/3.18.2/bin/cmake -E cmake_link_script CMakeFiles/cmTC_0bb8f.dir/link.txt --verbose=1
+/glade/u/apps/ch/opt/ncarcompilers/0.5.0/gnu/10.1.0/gcc  -DCMAKE_HAVE_LIBC_PTHREAD CMakeFiles/cmTC_0bb8f.dir/src.c.o -o cmTC_0bb8f 
+/usr/bin/ld: CMakeFiles/cmTC_0bb8f.dir/src.c.o: undefined reference to symbol 'pthread_cancel@@GLIBC_2.2.5'
+/usr/bin/ld: /glade/u/apps/ch/os/lib64/libpthread.so.0: error adding symbols: DSO missing from command line
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_0bb8f.dir/build.make:105: recipe for target 'cmTC_0bb8f' failed
+gmake[1]: *** [cmTC_0bb8f] Error 1
+gmake[1]: Leaving directory '/glade/scratch/jframe/nh-libtorch/build/CMakeFiles/CMakeTmp'
+Makefile:140: recipe for target 'cmTC_0bb8f/fast' failed
+gmake: *** [cmTC_0bb8f/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_cancel(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /glade/scratch/jframe/nh-libtorch/build/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/gmake cmTC_bd744/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_bd744.dir/build.make CMakeFiles/cmTC_bd744.dir/build
+gmake[1]: Entering directory '/glade/scratch/jframe/nh-libtorch/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_bd744.dir/CheckFunctionExists.c.o
+/glade/u/apps/ch/opt/ncarcompilers/0.5.0/gnu/10.1.0/gcc   -DCHECK_FUNCTION_EXISTS=pthread_create -o CMakeFiles/cmTC_bd744.dir/CheckFunctionExists.c.o -c /glade/u/apps/ch/opt/cmake/3.18.2/share/cmake-3.18/Modules/CheckFunctionExists.c
+Linking C executable cmTC_bd744
+/glade/u/apps/ch/opt/cmake/3.18.2/bin/cmake -E cmake_link_script CMakeFiles/cmTC_bd744.dir/link.txt --verbose=1
+/glade/u/apps/ch/opt/ncarcompilers/0.5.0/gnu/10.1.0/gcc  -DCHECK_FUNCTION_EXISTS=pthread_create CMakeFiles/cmTC_bd744.dir/CheckFunctionExists.c.o -o cmTC_bd744  -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_bd744.dir/build.make:105: recipe for target 'cmTC_bd744' failed
+gmake[1]: *** [cmTC_bd744] Error 1
+gmake[1]: Leaving directory '/glade/scratch/jframe/nh-libtorch/build/CMakeFiles/CMakeTmp'
+Makefile:140: recipe for target 'cmTC_bd744/fast' failed
+gmake: *** [cmTC_bd744/fast] Error 2
+
+
+
