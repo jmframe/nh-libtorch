@@ -4,9 +4,9 @@ from typing import Dict
 import torch
 import torch.nn as nn
 
-from neuralhydrology.modelzoo.head import get_head
-from neuralhydrology.modelzoo.basemodel import BaseModel
-from neuralhydrology.utils.config import Config
+from head import get_head
+from basemodel import BaseModel
+from config import Config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -98,3 +98,22 @@ class CudaLSTM(BaseModel):
         pred.update(self.head(self.dropout(lstm_output.transpose(0, 1))))
 
         return pred
+
+#############################################
+#####    CONVERT TO LIBTORCH WITH JIT   #####
+#############################################
+model = CudaLSTM(cfg=Config)
+
+with torch.no_grad():
+    # Generate a bunch of fake dta to feed the model when we 'torch.jit.script' it
+    # since it is needed by the JIT (not sure why)
+    fake_input = torch.zeros((10,100))
+
+    # Trace the model using 'torch.jit.script'
+    traced = torch.jit.script(model, fake_input)
+
+    # Print the Torch Script code
+    print(traced.code)
+
+    # We can also store the model like usual:
+    traced.save('traced.ptc')

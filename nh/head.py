@@ -4,7 +4,7 @@ from typing import Dict
 import torch
 import torch.nn as nn
 
-from neuralhydrology.utils.config import Config
+from config import Config
 
 LOGGER = logging.getLogger(__name__)
 
