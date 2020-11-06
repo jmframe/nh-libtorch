@@ -485,6 +485,7 @@ class Config(object):
         else:
             return self._cfg["target_noise_std"]
 
+    # JF might want to remove property decorator here, because JIT can't interpret length on property objects.
     @property
     def target_variables(self) -> List[str]:
         if "target_variables" in self._cfg.keys():

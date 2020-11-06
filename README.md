@@ -4,6 +4,6 @@
 
 #### I worked through Gary's blog to get a simple pytorch model running with the C++ API. https://g-airborne.com/bringing-your-deep-learning-model-to-production-with-libtorch-part-1-why-libtorch/
 
-#### As of right now, I just have Gary's code in as placeholders, but I will be replacing that with the actual neuralhydrology code.
+#### NeuralHydrology python code is in the directory ./nh
 
-#### 
+#### Got rid of the cfg functionality, and just added a dictionary in the cudalstm, basemodel and head files, although I'm sure it is not needed in all three. Probably just one.
