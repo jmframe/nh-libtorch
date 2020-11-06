@@ -1,1 +1,5 @@
-__pycache__/*
+__pycache__/
+nh/__pycache__/
+nh/__pycache__/basemodel.cpython-37.pyc
+nh/__pycache__/config.cpython-37.pyc
+nh/__pycache__/head.cpython-37.pyc

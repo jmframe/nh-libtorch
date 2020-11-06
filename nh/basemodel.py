@@ -3,8 +3,26 @@ from typing import Dict
 import torch
 import torch.nn as nn
 
-from config import Config
-
+#from config import Config
+xconfigx = {
+'experiment_name': 'nwmv3_test_run',
+'initial_forget_bias':3,
+'hidden_size': 64,
+'dynamic_inputs': ['RAINRATE','Q2D','T2D','LWDOWN','SWDOWN','PSFC','U2D','V2D'],
+'embedding_hiddens': [30,20,64],
+'camels_attributes': ['lat','lon','area_sqkm'],
+'static_inputs': None,
+'hydroatlas_attributes': None,
+'number_of_basins': 8,
+'use_basin_id_encoding': False,
+'predict_last_n':1,
+'head':'regression',
+'target_variables': 'obs',
+'embedding_dropout': 0.0,
+'output_dropout': 0.4,
+'embedding_activation': 'tanh',
+'output_activation': 'linear'
+}
 
 class BaseModel(nn.Module):
     """Abstract base model class, don't use this class for model training.
@@ -20,11 +38,12 @@ class BaseModel(nn.Module):
         The run configuration.
     """
 
-    def __init__(self, cfg: Config):
+    def __init__(self, xconfigx):
         super(BaseModel, self).__init__()
-        self.cfg = cfg
+        self.cfg = xconfigx
+        print(xconfigx)
+        self.output_size = len(xconfigx['target_variables'])
 
-        self.output_size = len(cfg.target_variables)
 
     def forward(self, data: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         """Perform a forward pass.
@@ -61,7 +80,7 @@ class BaseModel(nn.Module):
             Sampled model outputs for the `predict_last_n` (config argument) time steps of each sequence. The shape of 
             the output is ``[batch size, predict_last_n, n_samples]``.
         """
-        predict_last_n = self.cfg.predict_last_n
+        predict_last_n = xconfigx['predict_last_n']
         samples = torch.zeros(data['x_d'].shape[0], predict_last_n, n_samples)
         for i in range(n_samples):
             prediction = self.forward(data)

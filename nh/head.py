@@ -4,12 +4,31 @@ from typing import Dict
 import torch
 import torch.nn as nn
 
-from config import Config
+#from config import Config
+xconfigx = {
+'experiment_name': 'nwmv3_test_run',
+'initial_forget_bias':3,
+'hidden_size': 64,
+'dynamic_inputs': ['RAINRATE','Q2D','T2D','LWDOWN','SWDOWN','PSFC','U2D','V2D'],
+'embedding_hiddens': [30,20,64],
+'camels_attributes': ['lat','lon','area_sqkm'],
+'static_inputs': None,
+'hydroatlas_attributes': None,
+'number_of_basins': 8,
+'use_basin_id_encoding': False,
+'predict_last_n':1,
+'head':'regression',
+'target_variables': 'obs',
+'embedding_dropout': 0.0,
+'output_dropout': 0.4,
+'embedding_activation': 'tanh',
+'output_activation': 'linear'
+}
 
 LOGGER = logging.getLogger(__name__)
 
 
-def get_head(cfg: Config, n_in: int, n_out: int) -> nn.Module:
+def get_head(xconfigx, n_in: int, n_out: int) -> nn.Module:
     """Get specific head module, depending on the run configuration.
 
     Parameters
@@ -26,10 +45,10 @@ def get_head(cfg: Config, n_in: int, n_out: int) -> nn.Module:
     nn.Module
         The model head, as specified in the run configuration.
     """
-    if cfg.head.lower() == "regression":
-        head = Regression(n_in=n_in, n_out=n_out, activation=cfg.output_activation)
+    if xconfigx['head'].lower() == "regression":
+        head = Regression(n_in=n_in, n_out=n_out, activation=xconfigx['output_activation'])
     else:
-        raise NotImplementedError(f"{cfg.head} not implemented or not linked in `get_head()`")
+        raise NotImplementedError(f"{xconfigx['head']} not implemented or not linked in `get_head()`")
 
     return head
 

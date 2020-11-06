@@ -6,7 +6,26 @@ import torch.nn as nn
 
 from head import get_head
 from basemodel import BaseModel
-from config import Config
+#from config import Config
+xconfigx = {
+'experiment_name': 'nwmv3_test_run',
+'initial_forget_bias':3,
+'hidden_size': 64,
+'dynamic_inputs': ['RAINRATE','Q2D','T2D','LWDOWN','SWDOWN','PSFC','U2D','V2D'],
+'embedding_hiddens': [30,20,64],
+'camels_attributes': ['lat','lon','area_sqkm'],
+'static_inputs': None,
+'hydroatlas_attributes': None,
+'number_of_basins': 8,
+'use_basin_id_encoding': False,
+'predict_last_n':1,
+'head':'regression',
+'target_variables': 'obs',
+'embedding_dropout': 0.0,
+'output_dropout': 0.4,
+'embedding_activation': 'tanh',
+'output_activation': 'linear'
+}
 
 LOGGER = logging.getLogger(__name__)
 
@@ -29,31 +48,32 @@ class CudaLSTM(BaseModel):
         The run configuration.
     """
 
-    def __init__(self, cfg: Config):
-        super(CudaLSTM, self).__init__(cfg=cfg)
+    def __init__(self, xconfigx):
+        super(CudaLSTM, self).__init__(xconfigx)
 
-        if cfg.embedding_hiddens:
+        if xconfigx['embedding_hiddens']:
             LOGGER.warning("## Warning: Embedding settings are ignored. Use EmbCudaLSTM for embeddings")
 
-        input_size = len(cfg.dynamic_inputs + cfg.static_inputs + cfg.hydroatlas_attributes + cfg.camels_attributes)
-        if cfg.use_basin_id_encoding:
-            input_size += cfg.number_of_basins
+        input_size = len(xconfigx['dynamic_inputs'] + xconfigx['camels_attributes'])
+        if xconfigx['use_basin_id_encoding']:
+            input_size += xconfigx['number_of_basin']
 
-        if cfg.head.lower() == "umal":
+        if xconfigx['head'].lower() == "umal":
             input_size += 1
 
-        self.lstm = nn.LSTM(input_size=input_size, hidden_size=cfg.hidden_size)
+        self.lstm = nn.LSTM(input_size=input_size, hidden_size=xconfigx['hidden_size'])
 
-        self.dropout = nn.Dropout(p=cfg.output_dropout)
+        self.dropout = nn.Dropout(p=xconfigx['output_dropout'])
 
-        self.head = get_head(cfg=cfg, n_in=cfg.hidden_size, n_out=self.output_size)
+        self.head = get_head(xconfigx,n_in=xconfigx['hidden_size'], n_out=self.output_size)
 
         self._reset_parameters()
 
     def _reset_parameters(self):
         """Special initialization of certain model weights."""
-        if self.cfg.initial_forget_bias is not None:
-            self.lstm.bias_hh_l0.data[self.cfg.hidden_size:2 * self.cfg.hidden_size] = self.cfg.initial_forget_bias
+        if xconfigx['initial_forget_bias'] is not None:
+            self.lstm.bias_hh_l0.data[xconfigx['hidden_size']:2 * xconfigx['hidden_size']] = \
+                xconfigx['initial_forget_bias']
 
     def forward(self, data: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         """Perform a forward pass on the CudaLSTM model.
@@ -102,7 +122,7 @@ class CudaLSTM(BaseModel):
 #############################################
 #####    CONVERT TO LIBTORCH WITH JIT   #####
 #############################################
-model = CudaLSTM(cfg=Config)
+model = CudaLSTM(xconfigx)
 
 with torch.no_grad():
     # Generate a bunch of fake dta to feed the model when we 'torch.jit.script' it
@@ -116,4 +136,4 @@ with torch.no_grad():
     print(traced.code)
 
     # We can also store the model like usual:
-    traced.save('traced.ptc')
+    traced.save('cudalstm.ptc')
