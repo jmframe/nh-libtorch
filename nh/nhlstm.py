@@ -1,11 +1,10 @@
 import logging
 from typing import Dict
+import pickle
 
 import torch
 import torch.nn as nn
 
-from head import get_head
-from basemodel import BaseModel
 #from config import Config
 xconfigx = {
 'experiment_name': 'nwmv3_test_run',
@@ -27,11 +26,18 @@ xconfigx = {
 'output_activation': 'linear'
 }
 
+with open('sugar_creek_data.p','rb') as fp:
+    ds = pickle.load(fp)
+
+# At some point I have to load in the trained_lstm...
+#this_nn = nn.Module.load_state_dict(torch.load('trained_lstm.pt', map_location=torch.device(device)))
+
 LOGGER = logging.getLogger(__name__)
 
 
-class CudaLSTM(BaseModel):
+class nhLSTM(nn.Module):
     """LSTM model class, which relies on PyTorch's CUDA LSTM class.
+
     This class implements the standard LSTM combined with a model head, as specified in the config. All features 
     (time series and static) are concatenated and passed to the LSTM directly. If you want to embedd the static features
     prior to the concatenation, use the `EmbCudaLSTM` class.
@@ -40,6 +46,7 @@ class CudaLSTM(BaseModel):
     the gradient flow. 
     The `CudaLSTM` class does only support single timescale predictions. Use `MTSLSTM` to train a model and get 
     predictions on multiple temporal resolutions at the same time.
+
     Parameters
     ----------
     cfg : Config
@@ -47,10 +54,7 @@ class CudaLSTM(BaseModel):
     """
 
     def __init__(self, xconfigx):
-        super(CudaLSTM, self).__init__(xconfigx)
-
-        if xconfigx['embedding_hiddens']:
-            LOGGER.warning("## Warning: Embedding settings are ignored. Use EmbCudaLSTM for embeddings")
+        super(nhLSTM, self).__init__()
 
         input_size = len(xconfigx['dynamic_inputs'] + xconfigx['camels_attributes'])
         if xconfigx['use_basin_id_encoding']:
@@ -59,26 +63,31 @@ class CudaLSTM(BaseModel):
         if xconfigx['head'].lower() == "umal":
             input_size += 1
 
+        nn.Module.load_state_dict(torch.load('trained_lstm.pt', map_location=self.device(device)))
+
+        self.output_size = len(xconfigx['target_variables'])
+
         self.lstm = nn.LSTM(input_size=input_size, hidden_size=xconfigx['hidden_size'])
 
         self.dropout = nn.Dropout(p=xconfigx['output_dropout'])
 
-        self.head = get_head(xconfigx,n_in=xconfigx['hidden_size'], n_out=self.output_size)
+        #self.head = get_head(xconfigx,n_in=xconfigx['hidden_size'], n_out=self.output_size)
+        layers = [nn.Linear(xconfigx['hidden_size'], self.output_size)]
+        dotnet = nn.Sequential(*layers)
+        self.head = {'y_hat': dotnet(x)}
 
-        self._reset_parameters()
-
-    def _reset_parameters(self):
-        """Special initialization of certain model weights."""
         if xconfigx['initial_forget_bias'] is not None:
             self.lstm.bias_hh_l0.data[xconfigx['hidden_size']:2 * xconfigx['hidden_size']] = \
                 xconfigx['initial_forget_bias']
 
-    def forward(self, data: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    def forward(self, ds) -> Dict[str, torch.Tensor]:
         """Perform a forward pass on the CudaLSTM model.
+
         Parameters
         ----------
         data : Dict[str, torch.Tensor]
             Dictionary, containing input features as key-value pairs.
+
         Returns
         -------
         Dict[str, torch.Tensor]
@@ -118,7 +127,7 @@ class CudaLSTM(BaseModel):
 #############################################
 #####    CONVERT TO LIBTORCH WITH JIT   #####
 #############################################
-model = CudaLSTM(xconfigx)
+model = nhLSTM(xconfigx)
 
 with torch.no_grad():
     # Generate a bunch of fake dta to feed the model when we 'torch.jit.script' it
@@ -132,4 +141,4 @@ with torch.no_grad():
     print(traced.code)
 
     # We can also store the model like usual:
-    traced.save('cudalstm.ptc')
+    traced.save('nhlstm.ptc')

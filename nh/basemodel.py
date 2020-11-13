@@ -26,12 +26,10 @@ xconfigx = {
 
 class BaseModel(nn.Module):
     """Abstract base model class, don't use this class for model training.
-
     Use subclasses of this class for training/evaluating different models, e.g. use `CudaLSTM` for training a standard
     LSTM model or `EA-LSTM` for training an Entity-Aware-LSTM. Refer to
     `Documentation/Modelzoo <https://neuralhydrology.readthedocs.io/en/latest/usage/models.html>`_ for a full list of
     available models and how to integrate a new model. 
-
     Parameters
     ----------
     cfg : Config
@@ -47,12 +45,10 @@ class BaseModel(nn.Module):
 
     def forward(self, data: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         """Perform a forward pass.
-
         Parameters
         ----------
         data : Dict[str, torch.Tensor]
             Dictionary, containing input features as key-value pairs.
-
         Returns
         -------
         Dict[str, torch.Tensor]
@@ -66,14 +62,12 @@ class BaseModel(nn.Module):
         This function does `n_samples` forward passes for each sample in the batch. Only useful for models with dropout,
         to perform MC-Dropout sampling. Make sure to set the model to train mode before calling this function 
         (`model.train()`), otherwise dropout won't be active.
-
         Parameters
         ----------
         data : Dict[str, torch.Tensor]
             Dictionary, containing input features as key-value pairs.
         n_samples : int
             Number of samples to generate for each input sample.
-
         Returns
         -------
         torch.Tensor

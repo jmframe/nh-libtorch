@@ -30,7 +30,6 @@ LOGGER = logging.getLogger(__name__)
 
 def get_head(xconfigx, n_in: int, n_out: int) -> nn.Module:
     """Get specific head module, depending on the run configuration.
-
     Parameters
     ----------
     cfg : Config
@@ -39,7 +38,6 @@ def get_head(xconfigx, n_in: int, n_out: int) -> nn.Module:
         Number of input features.
     n_out : int
         Number of output features.
-
     Returns
     -------
     nn.Module
@@ -88,7 +86,6 @@ class Regression(nn.Module):
         Parameters
         ----------
         x : torch.Tensor
-
         Returns
         -------
         Dict[str, torch.Tensor]
