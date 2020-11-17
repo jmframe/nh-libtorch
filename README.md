@@ -13,3 +13,5 @@
 #### The next step, and one of the most important steps is loading in the data to be used in the forward pass for prediction. I currently have the data saved in a pickle file, but the Pytorch C++ API will not be able to load this in, so I need to convert it to either a binary file, or a json file. From what I have read on-line (https://discuss.pytorch.org/t/serialization-in-c-frontend-api/30200) the binary file option is prefered, because json is slow with large tensors. So, I just need to convert the model input data, and the model weights, into binary files, from their pickle files outputted from NeuralHydrology.
 
 #### Finally got the forcing data to inport with C++, not have to pass to pytorch.
+
+#### Tested the forcing data input: `g++ test_load_csv.cpp -o test_run`

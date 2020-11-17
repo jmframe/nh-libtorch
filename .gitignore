@@ -3,4 +3,4 @@ nh/__pycache__/*
 z_trash/*
 z_old/*
 __pycache__
-
+*.pyc
