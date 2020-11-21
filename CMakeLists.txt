@@ -12,7 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Torch REQUIRED)
 
 # Make Target
-add_executable(nh-libtorch main.cpp)
+add_executable(lstm_run lstm.cpp)
 
 # Link Torch C++ libs
-target_link_libraries(nh-libtorch "${TORCH_LIBRARIES}")
+target_link_libraries(lstm_run "${TORCH_LIBRARIES}")

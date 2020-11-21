@@ -72,7 +72,7 @@ CMAKE_BINARY_DIR = /glade/scratch/jframe/nh-libtorch/build
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/lstm-nh.dir/all
+all: CMakeFiles/lstm_run.dir/all
 
 .PHONY : all
 
@@ -82,36 +82,36 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/lstm-nh.dir/clean
+clean: CMakeFiles/lstm_run.dir/clean
 
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/lstm-nh.dir
+# Target rules for target CMakeFiles/lstm_run.dir
 
 # All Build rule for target.
-CMakeFiles/lstm-nh.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm-nh.dir/build.make CMakeFiles/lstm-nh.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm-nh.dir/build.make CMakeFiles/lstm-nh.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/glade/scratch/jframe/nh-libtorch/build/CMakeFiles --progress-num=1,2 "Built target lstm-nh"
-.PHONY : CMakeFiles/lstm-nh.dir/all
+CMakeFiles/lstm_run.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm_run.dir/build.make CMakeFiles/lstm_run.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm_run.dir/build.make CMakeFiles/lstm_run.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/glade/scratch/jframe/nh-libtorch/build/CMakeFiles --progress-num=1,2 "Built target lstm_run"
+.PHONY : CMakeFiles/lstm_run.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/lstm-nh.dir/rule: cmake_check_build_system
+CMakeFiles/lstm_run.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /glade/scratch/jframe/nh-libtorch/build/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/lstm-nh.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/lstm_run.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /glade/scratch/jframe/nh-libtorch/build/CMakeFiles 0
-.PHONY : CMakeFiles/lstm-nh.dir/rule
+.PHONY : CMakeFiles/lstm_run.dir/rule
 
 # Convenience name for target.
-lstm-nh: CMakeFiles/lstm-nh.dir/rule
+lstm_run: CMakeFiles/lstm_run.dir/rule
 
-.PHONY : lstm-nh
+.PHONY : lstm_run
 
 # clean rule for target.
-CMakeFiles/lstm-nh.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm-nh.dir/build.make CMakeFiles/lstm-nh.dir/clean
-.PHONY : CMakeFiles/lstm-nh.dir/clean
+CMakeFiles/lstm_run.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm_run.dir/build.make CMakeFiles/lstm_run.dir/clean
+.PHONY : CMakeFiles/lstm_run.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

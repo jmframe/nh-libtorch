@@ -75,17 +75,6 @@ CMAKE_BINARY_DIR = /glade/scratch/jframe/nh-libtorch/build
 #=============================================================================
 # Targets provided globally by CMake.
 
-# Special rule for the target rebuild_cache
-rebuild_cache:
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
-	/glade/u/apps/ch/opt/cmake/3.18.2/bin/cmake --regenerate-during-build -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
-.PHONY : rebuild_cache
-
-# Special rule for the target rebuild_cache
-rebuild_cache/fast: rebuild_cache
-
-.PHONY : rebuild_cache/fast
-
 # Special rule for the target edit_cache
 edit_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake cache editor..."
@@ -96,6 +85,17 @@ edit_cache:
 edit_cache/fast: edit_cache
 
 .PHONY : edit_cache/fast
+
+# Special rule for the target rebuild_cache
+rebuild_cache:
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
+	/glade/u/apps/ch/opt/cmake/3.18.2/bin/cmake --regenerate-during-build -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+.PHONY : rebuild_cache
+
+# Special rule for the target rebuild_cache
+rebuild_cache/fast: rebuild_cache
+
+.PHONY : rebuild_cache/fast
 
 # The main all target
 all: cmake_check_build_system
@@ -130,44 +130,44 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named lstm-nh
+# Target rules for targets named lstm_run
 
 # Build rule for target.
-lstm-nh: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 lstm-nh
-.PHONY : lstm-nh
+lstm_run: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 lstm_run
+.PHONY : lstm_run
 
 # fast build rule for target.
-lstm-nh/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm-nh.dir/build.make CMakeFiles/lstm-nh.dir/build
-.PHONY : lstm-nh/fast
+lstm_run/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm_run.dir/build.make CMakeFiles/lstm_run.dir/build
+.PHONY : lstm_run/fast
 
-main.o: main.cpp.o
+lstm.o: lstm.cpp.o
 
-.PHONY : main.o
+.PHONY : lstm.o
 
 # target to build an object file
-main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm-nh.dir/build.make CMakeFiles/lstm-nh.dir/main.cpp.o
-.PHONY : main.cpp.o
+lstm.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm_run.dir/build.make CMakeFiles/lstm_run.dir/lstm.cpp.o
+.PHONY : lstm.cpp.o
 
-main.i: main.cpp.i
+lstm.i: lstm.cpp.i
 
-.PHONY : main.i
+.PHONY : lstm.i
 
 # target to preprocess a source file
-main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm-nh.dir/build.make CMakeFiles/lstm-nh.dir/main.cpp.i
-.PHONY : main.cpp.i
+lstm.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm_run.dir/build.make CMakeFiles/lstm_run.dir/lstm.cpp.i
+.PHONY : lstm.cpp.i
 
-main.s: main.cpp.s
+lstm.s: lstm.cpp.s
 
-.PHONY : main.s
+.PHONY : lstm.s
 
 # target to generate assembly for a file
-main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm-nh.dir/build.make CMakeFiles/lstm-nh.dir/main.cpp.s
-.PHONY : main.cpp.s
+lstm.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lstm_run.dir/build.make CMakeFiles/lstm_run.dir/lstm.cpp.s
+.PHONY : lstm.cpp.s
 
 # Help Target
 help:
@@ -177,10 +177,10 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... lstm-nh"
-	@echo "... main.o"
-	@echo "... main.i"
-	@echo "... main.s"
+	@echo "... lstm_run"
+	@echo "... lstm.o"
+	@echo "... lstm.i"
+	@echo "... lstm.s"
 .PHONY : help
 
 

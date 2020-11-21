@@ -5,5 +5,5 @@ cd build && \
 cmake -DCMAKE_PREFIX_PATH=/glade/scratch/jframe/libtorch .. && \
 make && \
 echo "\nRunning the program...\n" &&\
-./nh-libtorch ../nh/cudalstm.ptc && \
+./lstm_run ../lstm.ptc && \
 cd ..
