@@ -1,3 +1,0 @@
-/glade/scratch/jframe/nh-libtorch/build/CMakeFiles/edit_cache.dir
-/glade/scratch/jframe/nh-libtorch/build/CMakeFiles/rebuild_cache.dir
-/glade/scratch/jframe/nh-libtorch/build/CMakeFiles/lstm_run.dir
