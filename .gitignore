@@ -4,3 +4,4 @@ z_trash/*
 z_old/*
 __pycache__
 *.pyc
+build/*

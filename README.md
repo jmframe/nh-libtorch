@@ -16,3 +16,4 @@
 
 #### Tested the forcing data input: `g++ test_load_csv.cpp -o test_run`
 
+#### As of 11/20/2020 we are going to break down NeuralHydrology forward pass to it's bare bones in the file `lstm.py`. Tracing that file gives `lstm.ptc`. We call that file with `lstm.cpp`, which also should pass in the data and trained weights through tensors.

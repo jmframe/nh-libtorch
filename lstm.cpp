@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
     // Within this scope/thread, don't use gradients (again, like in Python)
     torch::NoGradGuard no_grad_;
 
-    // Maybe import forcing data and save in a vector of vectors. 
+    // Import forcing data and save in a vector of vectors. 
     // Columns are in order for trained NeuralHydrology code
     // LWDOWN, PSFC, Q2D, RAINRATE, SWDOWN, T2D, U2D, V2D, lat, lon, area_sqkm
     std::cout << "importing sugar creek data \n";
@@ -40,15 +40,21 @@ int main(int argc, char** argv) {
     std::vector<std::vector<std::string> > data_str = reader.getData();
     int nrow = data_str.size();
     int ncol = data_str[0].size();
-    // make an array with the input data
-    double input_arr[nrow][ncol];
+    double input_arr[300][ncol];
+    double future_arr[1][ncol];
     std::vector<std::vector<double> > data_out;
     data_out.resize(ncol);
-    for (int i = 1; i < nrow; ++i) {
+    for (int i = 1; i < 301; ++i) {
         for (int j = 0; j < ncol; ++j){
             double temp = strtof(data_str[i][j].c_str(),NULL);
             data_out[j].push_back(temp);
             input_arr[i][j] = temp;
+        }
+    }
+    for (int i = 301; i < 302; ++i) {
+        for (int j = 0; j < ncol; ++j){
+            double temp = strtof(data_str[i][j].c_str(),NULL);
+            future_arr[i][j] = temp;
         }
     }
 
@@ -57,17 +63,17 @@ int main(int argc, char** argv) {
  //   torch::Tensor imput_tesor = torch::input_arr
  //   auto options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCUDA, 1);
     auto options = torch::TensorOptions().dtype(torch::kFloat64);
-    torch::Tensor input_tensor = torch::from_blob(input_arr, {nrow, ncol}, options);
-
+    torch::Tensor input_tensor = torch::from_blob(input_arr, {300, ncol}, options);
+    torch::Tensor future_tensor = torch::from_blob(future_arr, {1, ncol}, options);
 
     // Input to the model is a vector of "IValues" (tensors)
     std::vector<torch::jit::IValue> input = {
      // Corresponds to `input`
-     torch::zeros({ 11,20 }, torch::dtype(torch::kFloat)),
+     input_tensor,
      // Corresponds to the `future` parameter
-     torch::full({ 1 }, 10, torch::dtype(torch::kInt))
+     future_tensor
      };
-
+    
     // `model.forward` does what you think it does; it returns an IValue
     // which we convert back to a Tensor
     auto output = model
