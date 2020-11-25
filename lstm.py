@@ -3,59 +3,25 @@ from torch import nn
 
 torch.manual_seed(0)
 
-"""
-clas Sequence;
+class LSTM(nn.Module):
+    def __init__(self, input_size=11, hidden_layer_size=100, output_size=1):
+        super().__init__()
+        self.input_size = input_size
+        self.hidden_layer_size = hidden_layer_size
+        self.batch_size = 1 # In this application we do one timestep only
+        self.lstm = nn.LSTM(input_size, hidden_layer_size)
+        self.linear = nn.Linear(hidden_layer_size, output_size)
 
-Model capable of doing sine wave prediction. We don't care about the model itself for now,
-just assume it works.
+    def forward(self, input_layer, h_t, c_t):
+        h_t = h_t.float()
+        c_t = c_t.float()
+        input_layer = input_layer.float()
+        input_view = input_layer.view(1,1,-1)
+        output, (c_t, h_t) = self.lstm(input_view, (h_t,c_t))
+        prediction = self.linear(h_t)
+        return prediction, h_t, c_t
 
-Source:
-  https://github.com/pytorch/examples/blob/master/time_sequence_prediction/train.py 
-"""
-class Sequence(nn.Module):
-
-    def __init__(self):
-        super(Sequence, self).__init__()
-        self.lstm1 = nn.LSTMCell(11,51)
-        self.lstm2 = nn.LSTMCell(51,51)
-        self.linear = nn.Linear(51,11)
-
-        self.init_func = 'zeros'
-
-    def forward(self, input, future):
-        outputs = []
-
-        # Changed 'torch.double' to 'torch.float' because the LSTM layer will complain
-        if self.init_func == 'ones':
-            h_t = torch.ones(input.size(0),51, dtype=torch.float)
-            c_t = torch.ones(input.size(0),51, dtype=torch.float)
-            h_t2 = torch.ones(input.size(0),51, dtype=torch.float)
-            c_t2 = torch.ones(input.size(0),51, dtype=torch.float)
-            output = torch.ones((1,1))
-        else:
-            h_t = torch.zeros(input.size(0),51, dtype=torch.float)
-            c_t = torch.zeros(input.size(0),51, dtype=torch.float)
-            h_t2 = torch.zeros(input.size(0),51, dtype=torch.float)
-            c_t2 = torch.zeros(input.size(0),51, dtype=torch.float)
-            output = torch.zeros((1,1))
-
-        for i, input_t in enumerate(input.chunk(input.size(1), dim=1)):
-            h_t, c_t = self.lstm1(input_t, (h_t, c_t))
-            h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
-            output = self.linear(h_t2)
-            outputs += [output]
-
-        for i in range(int(future)):
-            h_t, c_t = self.lstm1(output, (h_t, c_t))
-            h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
-            output = self.linear(h_t2)
-            outputs += [output]
-
-        outputs = torch.stack(outputs, 1).squeeze(2)
-
-        return outputs
-
-model = Sequence()
+model = LSTM()
 
 with torch.no_grad():
     # Generate a bunch of fake dta to feed the model when we 'torch.jit.script' it

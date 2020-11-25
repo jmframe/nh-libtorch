@@ -41,44 +41,39 @@ int main(int argc, char** argv) {
     int nrow = data_str.size();
     int ncol = data_str[0].size();
     double input_arr[300][ncol];
-    double future_arr[1][ncol];
-    std::vector<std::vector<double> > data_out;
-    data_out.resize(ncol);
+    std::vector<std::vector<double> > data_col;
+    data_col.resize(ncol);
+    std::vector<std::vector<double> > data_row;
+    data_row.resize(nrow);
     for (int i = 1; i < 301; ++i) {
         for (int j = 0; j < ncol; ++j){
             double temp = strtof(data_str[i][j].c_str(),NULL);
-            data_out[j].push_back(temp);
+            temp = (temp - mean) / std
+            data_col[j].push_back(temp);
             input_arr[i][j] = temp;
         }
     }
-    for (int i = 301; i < 302; ++i) {
-        for (int j = 0; j < ncol; ++j){
-            double temp = strtof(data_str[i][j].c_str(),NULL);
-            future_arr[i][j] = temp;
+    for (int i = 1; i < ncol; ++i) {
+        for (int j = 0; j < nrow; ++j){
+            double temp = strtof(data_str[j][i].c_str(),NULL);
+            data_row[j].push_back(temp);
         }
     }
 
-
     // turn array into torch tensor
- //   torch::Tensor imput_tesor = torch::input_arr
- //   auto options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCUDA, 1);
     auto options = torch::TensorOptions().dtype(torch::kFloat64);
     torch::Tensor input_tensor = torch::from_blob(input_arr, {300, ncol}, options);
-    torch::Tensor future_tensor = torch::from_blob(future_arr, {1, ncol}, options);
+    torch::Tensor h_t = torch::zeros({ 1, 1, 100 }, torch::dtype(torch::kFloat))
+    torch::Tensor c_t = torch::zeros({ 1, 1, 100 }, torch::dtype(torch::kFloat))
 
     // Input to the model is a vector of "IValues" (tensors)
-    std::vector<torch::jit::IValue> input = {
-     // Corresponds to `input`
-     input_tensor,
-     // Corresponds to the `future` parameter
-     future_tensor
-     };
+    std::vector<torch::jit::IValue> input = input_tensor
+    std::vector<torch::jit::IValue> h_t = h_t
+    std::vector<torch::jit::IValue> c_t = c_t
     
     // `model.forward` does what you think it does; it returns an IValue
     // which we convert back to a Tensor
-    auto output = model
-      .forward(input)
-      .toTensor();
+    auto output, h_t, c_t = model.forward(input, h_t, c_t, Weights).toTensor();
     //.forward(input)
   
     // Extract size of output (of the first and only batch) and preallocate
