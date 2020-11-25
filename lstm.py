@@ -39,7 +39,7 @@ class Sequence(nn.Module):
             c_t2 = torch.zeros(input.size(0),51, dtype=torch.float)
             output = torch.zeros((1,1))
 
-        for i, input_t in enumerate(input.chunk(input.size(1), dim=11)):
+        for i, input_t in enumerate(input.chunk(input.size(1), dim=1)):
             h_t, c_t = self.lstm1(input_t, (h_t, c_t))
             h_t2, c_t2 = self.lstm2(h_t, (h_t2, c_t2))
             output = self.linear(h_t2)

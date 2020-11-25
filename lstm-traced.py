@@ -16,7 +16,7 @@ def forward(self,
     c_t21 = torch.zeros([torch.size(input, 0), 51], dtype=6, layout=None, device=None, pin_memory=None)
     output1 = torch.zeros([1, 1], dtype=None, layout=None, device=None, pin_memory=None)
     c_t, c_t2, h_t, h_t2, output = c_t1, c_t21, h_t1, h_t21, output1
-  _0 = torch.chunk(input, torch.size(input, 1), 11)
+  _0 = torch.chunk(input, torch.size(input, 1), 1)
   _1 = ops.prim.min([9223372036854775807, torch.len(_0)])
   outputs0 = outputs
   c_t3 = c_t
