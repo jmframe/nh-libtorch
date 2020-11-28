@@ -26,10 +26,12 @@ model = LSTM()
 with torch.no_grad():
     # Generate a bunch of fake dta to feed the model when we 'torch.jit.script' it
     # since it is needed by the JIT (not sure why)
-    fake_input = torch.zeros((11,100))
+    inp = torch.zeros((1,11))
+    h_t = torch.zeros((1,1,100))
+    c_t = torch.zeros((1,1,100))
 
     # Trace the model using 'torch.jit.script'
-    traced = torch.jit.script(model, fake_input)
+    traced = torch.jit.script(model, (inp, h_t, c_t))
 
     # Print the Torch Script code
     print(traced.code)

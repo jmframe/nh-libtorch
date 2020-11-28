@@ -8,7 +8,7 @@ torch.manual_seed(0)
 
 class LSTM(nn.Module):
     def __init__(self, input_size=11, hidden_layer_size=100, output_size=1):
-        super().__init__()
+        super(LSTM, self).__init__()
         self.input_size = input_size
         self.hidden_layer_size = hidden_layer_size
         self.batch_size = 1 # In this application we do one timestep only
