@@ -2,12 +2,21 @@
 #include "CSV_Reader.h"
 #include <torch/script.h>
 
+
 int main(int argc, char** argv) {
   if (argc < 2) {
     std::cerr <<"Please provide model name." << std::endl;
     return 1;
   }
+  bool useGPU = false;
+  if (argc == 3 && std::string(argv[2]) == "-g")
+  {
+	useGPU = true;
+  }
 
+  //torch::Device device(torch::cuda::is_available() ? torch::kCUDA : torch::kCPU);i
+  torch::Device device( useGPU ? torch::kCUDA : torch::kCPU, 0);
+  
   torch::manual_seed(0);
 
   torch::jit::script::Module model;
@@ -18,7 +27,7 @@ int main(int argc, char** argv) {
     std::cout << "load model successfully \n"; 
     // Explicitly load model onto CPU, you can use kGPU if you are on Linux
     // and have libtorch version with CUSA support (and a GPU)
-    model.to(torch::kCPU);
+    model.to( device );
   
     // Set to `eval` model (just like Python)
     model.eval();
@@ -56,11 +65,11 @@ int main(int argc, char** argv) {
     }
 
     // turn array into torch tensor
-    auto options = torch::TensorOptions().dtype(torch::kFloat64);
-    torch::Tensor input_tensor = torch::from_blob(input_arr, {300, ncol}, options);
-    torch::Tensor h_t = torch::zeros({1, 1, 100}, torch::dtype(torch::kFloat64));
-    torch::Tensor c_t = torch::zeros({1, 1, 100}, torch::dtype(torch::kFloat64));
-    torch::Tensor output = torch::zeros({1},torch::dtype(torch::kFloat64));
+    auto options = torch::TensorOptions().dtype(torch::kFloat64).device(device);
+    torch::Tensor input_tensor = torch::from_blob(input_arr, {300, ncol}, torch::dtype(torch::kFloat64)).to(device);
+    torch::Tensor h_t = torch::zeros({1, 1, 100}, options);
+    torch::Tensor c_t = torch::zeros({1, 1, 100}, options);
+    torch::Tensor output = torch::zeros({1}, options);
 
     // Input to the model is a vector of "IValues" (tensors)
 //    std::vector<torch::jit::IValue> input = {input_tensor, h_t, c_t};
@@ -69,7 +78,7 @@ int main(int argc, char** argv) {
     // which we convert back to a Tensor
     for (int i = 1; i < 30; ++i){
         std::vector<torch::jit::IValue> inputs;
-        torch::Tensor input_row = torch::from_blob(data_row[i].data(), {1,ncol} , options).to(torch::kFloat64);
+        torch::Tensor input_row = torch::from_blob(data_row[i].data(), {1,ncol} , torch::dtype(torch::kFloat64)).to(torch::kFloat64).to(device);
         inputs.push_back(input_row);
         inputs.push_back(h_t);
         inputs.push_back(c_t);
