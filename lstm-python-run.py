@@ -59,12 +59,13 @@ scaler_std = np.append(np.array(scalers['xarray_stds'].to_array())[:-1], att_std
 input_tensor = (input_tensor-scaler_mean)/scaler_std
 
 hidden_layer_size = 64
-h_t = torch.zeros(1,1, hidden_layer_size).float()
-c_t = torch.zeros(1,1, hidden_layer_size).float()
+seq_length = 256
+h_t = torch.zeros(seq_length,1, hidden_layer_size).float()
+c_t = torch.zeros(seq_length,1, hidden_layer_size).float()
 output_list = []
-for t in range(n):
-    output, h_t, c_t = model(input_tensor[t,:], h_t, c_t)
+for t in range(seq_length,n):
     with torch.no_grad():
+        output, h_t, c_t = model(input_tensor[t-seq_length:t,:], h_t, c_t)
         output = output * obs_std + obs_mean
         output_list.append(output[0,0,0].numpy().tolist())
 

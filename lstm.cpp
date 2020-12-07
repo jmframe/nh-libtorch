@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
     // Columns are in order for trained NeuralHydrology code
     // LWDOWN, PSFC, Q2D, RAINRATE, SWDOWN, T2D, U2D, V2D, lat, lon, area_sqkm
     std::cout << "importing sugar creek data \n";
-    CSVReader reader("../data/sugar_creek_input.csv");
+    CSVReader reader("data/sugar_creek_input.csv");
     std::vector<std::vector<std::string> > data_str = reader.getData();
     int nrow = data_str.size();
     int ncol = data_str[0].size();
@@ -67,8 +67,8 @@ int main(int argc, char** argv) {
     // turn array into torch tensor
     auto options = torch::TensorOptions().dtype(torch::kFloat64).device(device);
     torch::Tensor input_tensor = torch::from_blob(input_arr, {300, ncol}, torch::dtype(torch::kFloat64)).to(device);
-    torch::Tensor h_t = torch::zeros({1, 1, 100}, options);
-    torch::Tensor c_t = torch::zeros({1, 1, 100}, options);
+    torch::Tensor h_t = torch::zeros({1, 1, 64}, options);
+    torch::Tensor c_t = torch::zeros({1, 1, 64}, options);
     torch::Tensor output = torch::zeros({1}, options);
 
     // Input to the model is a vector of "IValues" (tensors)
