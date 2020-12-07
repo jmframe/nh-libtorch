@@ -15,7 +15,7 @@ class LSTM(nn.Module):
         self.hidden_layer_size = hidden_layer_size
         self.batch_size = batch_size # In this application we do one timestep only
         self.lstm = nn.LSTM(input_size, hidden_layer_size)
-        self.linear = nn.Linear(hidden_layer_size, output_size)
+        self.head = nn.Linear(hidden_layer_size, output_size)
 
     def forward(self, input_layer, h_t, c_t):
         h_t = h_t.float()
@@ -50,8 +50,8 @@ obs = list(sug_crek.iloc[istart:iend,-1])
 
 pretrained_dict = torch.load(data_dir+'sugar_creek_trained.pt', map_location=torch.device('cpu'))
 # Change the name of the "head" layer to linear, since that is what the LSTM expects
-pretrained_dict['linear.weight'] = pretrained_dict.pop('head.net.0.weight')
-pretrained_dict['linear.bias'] = pretrained_dict.pop('head.net.0.bias')
+pretrained_dict['head.weight'] = pretrained_dict.pop('head.net.0.weight')
+pretrained_dict['head.bias'] = pretrained_dict.pop('head.net.0.bias')
 
 model.load_state_dict(pretrained_dict)
 
@@ -78,8 +78,7 @@ for t in tqdm(range(seq_length+1,n)):
 diff_sum2 = 0
 diff_sum_mean2 = 0
 obs_mean = np.nanmean(np.array(obs))
-print(obs_mean)
-for i, j in zip(output_list, obs):
+for i, j in zip(output_list[7000:], obs[7000:]):
     if np.isnan(j):
         continue
     mod_diff = i-j
@@ -87,7 +86,7 @@ for i, j in zip(output_list, obs):
     diff_sum2 += np.power((mod_diff),2)
     diff_sum_mean2 += np.power((mean_diff),2)
 nse = 1-(diff_sum2/diff_sum_mean2)
-print(nse)
+print('NSE score for {} timesteps = {:.2f}'.format(n, nse))
 
 
 
