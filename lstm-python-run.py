@@ -4,15 +4,16 @@ import torch
 from torch import nn
 import pickle
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 torch.manual_seed(0)
 
 class LSTM(nn.Module):
-    def __init__(self, input_size=11, hidden_layer_size=64, output_size=1):
+    def __init__(self, input_size=11, hidden_layer_size=64, output_size=1, batch_size=256):
         super(LSTM, self).__init__()
         self.input_size = input_size
         self.hidden_layer_size = hidden_layer_size
-        self.batch_size = 1 # In this application we do one timestep only
+        self.batch_size = batch_size # In this application we do one timestep only
         self.lstm = nn.LSTM(input_size, hidden_layer_size)
         self.head = nn.Linear(hidden_layer_size, output_size)
 
@@ -20,12 +21,17 @@ class LSTM(nn.Module):
         h_t = h_t.float()
         c_t = c_t.float()
         input_layer = input_layer.float()
-        input_view = input_layer.view(1,1,-1)
-        output, (h_t, c_t) = self.lstm(input_view, (h_t,c_t))
-        prediction = self.head(output)
+        input_view = input_layer.view(batch_size, input_size)
+        input_layer = input_view.unsqueeze(1)
+        output, (h_t, c_t) = self.lstm(input_layer, (h_t,c_t))
+        prediction = self.linear(output)
         return prediction, h_t, c_t
 
-model = LSTM()
+input_size = 11
+hidden_layer_size = 64
+output_size = 1
+batch_size = 336
+model = LSTM(input_size, hidden_layer_size, output_size, batch_size)
 
 istart=63578
 iend=72338
@@ -42,8 +48,7 @@ with  open(data_dir+'sugar_creek_basin_data.csv', 'r') as f:
     sug_crek = pd.read_csv(f)
 obs = list(sug_crek.iloc[istart:iend,-1])
 
-pretrained_dict = torch.load(data_dir+'sugar_creek_trained.pt')
-
+pretrained_dict = torch.load(data_dir+'sugar_creek_trained.pt', map_location=torch.device('cpu'))
 # Change the name of the "head" layer to linear, since that is what the LSTM expects
 pretrained_dict['head.weight'] = pretrained_dict.pop('head.net.0.weight')
 pretrained_dict['head.bias'] = pretrained_dict.pop('head.net.0.bias')
@@ -59,13 +64,14 @@ scaler_std = np.append(np.array(scalers['xarray_stds'].to_array())[:-1], att_std
 input_tensor = (input_tensor-scaler_mean)/scaler_std
 
 hidden_layer_size = 64
-seq_length = 256
-h_t = torch.zeros(seq_length,1, hidden_layer_size).float()
-c_t = torch.zeros(seq_length,1, hidden_layer_size).float()
+seq_length = batch_size
+h_t = torch.zeros(1, 1, hidden_layer_size).float()
+c_t = torch.zeros(1, 1, hidden_layer_size).float()
 output_list = []
-for t in range(seq_length,n):
+for t in tqdm(range(seq_length+1,n)):
     with torch.no_grad():
-        output, h_t, c_t = model(input_tensor[t-seq_length:t,:], h_t, c_t)
+        input_layer = input_tensor[t-seq_length:t, :]
+        output, h_t, c_t = model(input_layer, h_t, c_t)
         output = output * obs_std + obs_mean
         output_list.append(output[0,0,0].numpy().tolist())
 
