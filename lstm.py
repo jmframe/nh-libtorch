@@ -1,10 +1,11 @@
 import torch
 from torch import nn
+import pickle
 
 torch.manual_seed(0)
 
 class LSTM(nn.Module):
-    def __init__(self, input_size=11, hidden_layer_size=100, output_size=1):
+    def __init__(self, input_size=11, hidden_layer_size=64, output_size=1):
         super().__init__()
         self.input_size = input_size
         self.hidden_layer_size = hidden_layer_size
@@ -22,6 +23,13 @@ class LSTM(nn.Module):
         return prediction, h_t, c_t
 
 model = LSTM()
+
+data_dir = './data/'
+pretrained_dict = torch.load(data_dir+'sugar_creek_trained.pt', map_location=torch.device('cpu'))
+# Change the name of the "head" layer to linear, since that is what the LSTM expects
+pretrained_dict['linear.weight'] = pretrained_dict.pop('head.net.0.weight')
+pretrained_dict['linear.bias'] = pretrained_dict.pop('head.net.0.bias')
+model.load_state_dict(pretrained_dict)
 
 with torch.no_grad():
     # Generate a bunch of fake dta to feed the model when we 'torch.jit.script' it

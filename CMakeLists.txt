@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(tutorial-libtorch VERSION 1.0.0)
+project(nextgen-libtorch VERSION 1.0.0)
 
 # This sets the C++ version to C++17
 set(CMAKE_CXX_STANDARD 17)
