@@ -23,19 +23,20 @@ class LSTM(nn.Module):
         input_layer = input_layer.float()
         input_view = input_layer.view(seq_length, batch_size, input_size)
         output, (h_t, c_t) = self.lstm(input_view, (h_t,c_t))
-        prediction = self.linear(h_t)
+        prediction = self.head(h_t)
         return prediction, h_t, c_t
 
 input_size = 11
 hidden_layer_size = 64
 output_size = 1
-seq_length = 336
+seq_length = 1
 batch_size = 1
 model = LSTM(input_size, hidden_layer_size, output_size, batch_size, seq_length)
 
 istart=71593
 iend=72338
-warmup = seq_length
+#warmup = seq_length
+warmup = 336
 
 data_dir = './data/'
 with open(data_dir+'sugar_creek_input_all.csv','r') as f:
@@ -50,20 +51,11 @@ with  open(data_dir+'sugar_creek_basin_data.csv', 'r') as f:
     sug_crek = pd.read_csv(f)
 obs = list(sug_crek.iloc[istart:iend,-1])
 
-<<<<<<< HEAD
 p_dict = torch.load(data_dir+'sugar_creek_trained.pt', map_location=torch.device('cpu'))
 m_dict = model.state_dict()
-p_dict['linear.weight'] = p_dict.pop('head.net.0.weight')
-p_dict['linear.bias'] = p_dict.pop('head.net.0.bias')
+p_dict['head.weight'] = p_dict.pop('head.net.0.weight')
+p_dict['head.bias'] = p_dict.pop('head.net.0.bias')
 model.load_state_dict(p_dict)
-=======
-pretrained_dict = torch.load(data_dir+'sugar_creek_trained.pt', map_location=torch.device('cpu'))
-# Change the name of the "head" layer to linear, since that is what the LSTM expects
-pretrained_dict['head.weight'] = pretrained_dict.pop('head.net.0.weight')
-pretrained_dict['head.bias'] = pretrained_dict.pop('head.net.0.bias')
-
-model.load_state_dict(pretrained_dict)
->>>>>>> main
 
 obs_std = np.array(scalers['xarray_stds'].to_array())[-1]
 obs_mean = np.array(scalers['xarray_means'].to_array())[-1]
@@ -98,14 +90,9 @@ print('max', np.nanmax(obs))
 diff_sum2 = 0
 diff_sum_mean2 = 0
 obs_mean = np.nanmean(np.array(obs))
-<<<<<<< HEAD
 count_samples = 0
 for j, k in zip(output_list, obs):
     if np.isnan(k):
-=======
-for i, j in zip(output_list[7000:], obs[7000:]):
-    if np.isnan(j):
->>>>>>> main
         continue
     count_samples += 1
     mod_diff = j-k
@@ -113,12 +100,5 @@ for i, j in zip(output_list[7000:], obs[7000:]):
     diff_sum2 += np.power((mod_diff),2)
     diff_sum_mean2 += np.power((mean_diff),2)
 nse = 1-(diff_sum2/diff_sum_mean2)
-<<<<<<< HEAD
 print('Nash-Suttcliffe Efficiency', nse)
 print('on {} samples'.format(count_samples))
-=======
-print('NSE score for {} timesteps = {:.2f}'.format(n, nse))
-
-
-
->>>>>>> main
