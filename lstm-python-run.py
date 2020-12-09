@@ -31,17 +31,20 @@ hidden_layer_size = 64
 output_size = 1
 seq_length = 1
 batch_size = 1
+hidden_layer_size = 64
 model = LSTM(input_size, hidden_layer_size, output_size, batch_size, seq_length)
 
 istart=71593
 iend=72338
 #warmup = seq_length
 warmup = 336
+do_warmup = False
 
 data_dir = './data/'
-with open(data_dir+'sugar_creek_input_all.csv','r') as f:
+with open(data_dir+'sugar_creek_input_all2.csv','r') as f:
     df = pd.read_csv(f)
-df = df[['LWDOWN','PSFC','Q2D','RAINRATE','SWDOWN','T2D','U2D','V2D','area_sqkm', 'lat', 'lon']]  
+#df = df[['LWDOWN','PSFC','Q2D','RAINRATE','SWDOWN','T2D','U2D','V2D','area_sqkm', 'lat', 'lon']]
+df = df.drop(['date','obs'], axis=1)
 input_tensor = torch.tensor(df.values)
 print(input_tensor[istart-warmup,:])
 
@@ -66,17 +69,32 @@ scaler_std = np.append(np.array(scalers['xarray_stds'].to_array())[:-1], att_std
 input_tensor = (input_tensor-scaler_mean)/scaler_std
 print(input_tensor[istart-warmup,:])
 
-hidden_layer_size = 64
-h_t = torch.zeros(1, batch_size, hidden_layer_size).float()
-c_t = torch.zeros(1, batch_size, hidden_layer_size).float()
+if do_warmup:
+    h_t = torch.zeros(1, batch_size, hidden_layer_size).float()
+    c_t = torch.zeros(1, batch_size, hidden_layer_size).float()
+    for t in range(istart-warmup, istart):
+        with torch.no_grad():
+            input_layer = input_tensor[t-seq_length:t, :]
+            output, h_t, c_t = model(input_layer, h_t, c_t)
+            if t == istart-1:
+                h_t_np = h_t[0,0,:].numpy()
+                h_t_df = pd.DataFrame(h_t_np)
+                h_t_df.to_csv('data/h_t_start.csv')
+                c_t_np = c_t[0,0,:].numpy()
+                c_t_df = pd.DataFrame(c_t_np)
+                c_t_df.to_csv('data/c_t_start.csv')
+
+h_t = np.genfromtxt('data/h_t_start.csv', skip_header=1, delimiter=",")[:,1]
+h_t = torch.tensor(h_t).view(1,1,-1)
+c_t = np.genfromtxt('data/c_t_start.csv', skip_header=1, delimiter=",")[:,1]
+c_t = torch.tensor(c_t).view(1,1,-1)
 output_list = []
-for t in range(istart-warmup, iend):
+for t in range(istart, iend):
     with torch.no_grad():
         input_layer = input_tensor[t-seq_length:t, :]
         output, h_t, c_t = model(input_layer, h_t, c_t)
-        if t >= istart:
-            output = output[0,0,0].numpy().tolist() * obs_std + obs_mean
-            output_list.append(output)
+        output = output[0,0,0].numpy().tolist() * obs_std + obs_mean
+        output_list.append(output)
 
 print('output stats')
 print('mean', np.mean(output_list))
