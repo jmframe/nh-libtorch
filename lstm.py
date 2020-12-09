@@ -18,8 +18,8 @@ class LSTM(nn.Module):
         c_t = c_t.float()
         input_layer = input_layer.float()
         input_view = input_layer.view(1,1,-1)
-        output, (c_t, h_t) = self.lstm(input_view, (h_t,c_t))
-        prediction = self.linear(h_t)
+        output, (h_t, c_t) = self.lstm(input_view, (h_t,c_t))
+        prediction = self.linear(output)
         return prediction, h_t, c_t
 
 model = LSTM()

@@ -1,7 +1,76 @@
 #include <iostream>
 #include "CSV_Reader.h"
 #include <torch/script.h>
+#include <unordered_map>
+#include <iterator>
 
+typedef std::unordered_map< std::string, std::unordered_map< std::string, double> > ScaleParams;
+
+ScaleParams read_scale_params(std::string path)
+{
+    //Read the mean and standard deviation and put them into a map
+    ScaleParams params;
+    CSVReader reader(path);
+    auto data = reader.getData();
+    std::vector<std::string> header = data[0];
+    //Advance the iterator to the first data row (skip the header)
+    auto row = data.begin();
+    std::advance(row, 1);
+    //Loop form first row to end of data
+    for(; row != data.end(); ++row)
+    {
+	for(int i = 0; i < (*row).size(); i++)
+	{   //row has var, mean, std_dev
+ 	    //read into map keyed on var name, param name
+    	    params[ (*row)[0] ]["mean"] = strtof( (*row)[1].c_str(), NULL); 
+  	    params[ (*row)[0] ]["std_dev"] = strtof( (*row)[2].c_str(), NULL);
+	}
+    }
+
+    return params;
+}
+
+
+std::vector<torch::Tensor> read_input(std::string path, std::string scale_path, int& nrows, int& ncols)
+{
+    // Import forcing data and save in a vector of vectors. 
+    // Columns are in order for trained NeuralHydrology code
+    // LWDOWN, PSFC, Q2D, RAINRATE, SWDOWN, T2D, U2D, V2D, lat, lon, area_sqkm
+    // NOTE this order is important!!!
+    
+    CSVReader reader(path); 
+    std::vector<std::vector<std::string> > data_str = reader.getData();
+    nrows = data_str.size();
+    ncols = data_str[0].size();
+    std::vector<torch::Tensor> out;
+    //Create nrows default (undefined) tensors
+    out.resize(nrows);
+    //get the scaling parameters
+    ScaleParams scale = read_scale_params(scale_path);
+    //get the header row
+    auto header = data_str[0];
+    //variables to parse into
+    double temp, mean, std_dev;
+    torch::Tensor t;
+
+    for (int i = 1; i < nrows ; ++i) {
+	//init an empty tensor
+	t =  torch::zeros( {1, ncols}, torch::dtype(torch::kFloat64) );
+        for (int j = 0; j < ncols; ++j){
+	    //data value as double
+            temp = strtof(data_str[i][j].c_str(),NULL);
+            mean = scale[ header[j] ]["mean"];
+	    std_dev = scale[ header[j] ]["std_dev"];
+	    t[0][j] =  (temp - mean) / std_dev;
+        }
+	out[i] = t;
+	//you can push data to a vector and crate the tensor from the blob, but have to clone it since the data would be scoped to the function
+	//so just create the empty tensor and fill it in, so the vector out owns the tensor pointer AND its data...
+	// torch::from_blob(data.data(), {1,ncols}, torch::dtype(torch::kFloat64)).clone();
+    }
+    
+    return out;
+}
 
 int main(int argc, char** argv) {
   if (argc < 2) {
@@ -41,48 +110,31 @@ int main(int argc, char** argv) {
     // Within this scope/thread, don't use gradients (again, like in Python)
     torch::NoGradGuard no_grad_;
 
-    // Import forcing data and save in a vector of vectors. 
-    // Columns are in order for trained NeuralHydrology code
-    // LWDOWN, PSFC, Q2D, RAINRATE, SWDOWN, T2D, U2D, V2D, lat, lon, area_sqkm
     std::cout << "importing sugar creek data \n";
-    CSVReader reader("data/sugar_creek_input.csv");
-    std::vector<std::vector<std::string> > data_str = reader.getData();
-    int nrow = data_str.size();
-    int ncol = data_str[0].size();
-    double input_arr[301][ncol];
-    std::vector<std::vector<double> > data_col;
-    data_col.resize(ncol);
-    std::vector<std::vector<double> > data_row;
-    data_row.resize(nrow);
-    for (int i = 1; i < 301; ++i) {
-        for (int j = 0; j < ncol; ++j){
-            double temp = strtof(data_str[i][j].c_str(),NULL);
-            input_arr[i][j] = temp;
-//            temp = (temp - mean) / std
-            data_col[j].push_back(temp);
-            data_row[i].push_back(temp);
-        }
-    }
+    int nrows, ncols;
 
-    // turn array into torch tensor
+    std::vector<torch::Tensor> input_data = read_input("data/sugar_creek_input.csv", "input_scaling.csv", nrows, ncols);
+
+    // create the rest of the input tensors
     auto options = torch::TensorOptions().dtype(torch::kFloat64).device(device);
-    torch::Tensor input_tensor = torch::from_blob(input_arr, {300, ncol}, torch::dtype(torch::kFloat64)).to(device);
     torch::Tensor h_t = torch::zeros({1, 1, 64}, options);
     torch::Tensor c_t = torch::zeros({1, 1, 64}, options);
     torch::Tensor output = torch::zeros({1}, options);
-
+    
     // Input to the model is a vector of "IValues" (tensors)
-//    std::vector<torch::jit::IValue> input = {input_tensor, h_t, c_t};
-
+    //    std::vector<torch::jit::IValue> input = {input_tensor, h_t, c_t};
     // `model.forward` does what you think it does; it returns an IValue
     // which we convert back to a Tensor
-    for (int i = 1; i < 30; ++i){
+    // Loop over each input
+    for (int i = 1; i < nrows; ++i){
         std::vector<torch::jit::IValue> inputs;
-        torch::Tensor input_row = torch::from_blob(data_row[i].data(), {1,ncol} , torch::dtype(torch::kFloat64)).to(torch::kFloat64).to(device);
-        inputs.push_back(input_row);
+        // Create the model input for one time step
+	inputs.push_back(input_data[i].to(device));
         inputs.push_back(h_t);
         inputs.push_back(c_t);
+	// Run the model
         auto output_tuple = model.forward(inputs);
+	//Get the outputs
         torch::Tensor output = output_tuple.toTuple()->elements()[0].toTensor();
         torch::Tensor h_t = output_tuple.toTuple()->elements()[1].toTensor();
         torch::Tensor c_t = output_tuple.toTuple()->elements()[2].toTensor();
@@ -104,5 +156,5 @@ int main(int argc, char** argv) {
   for (const auto& method : model.get_methods())
     std::cout << method.name() << "\n";
 
-  return 0;
+   return 0;
 }
