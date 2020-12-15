@@ -1,21 +1,29 @@
 # Run a prediction from a trained NeuralHydrology model through the C++ Pytorch API
 
-## Please update this readme frequently. I am just adding a bunch of notes right now, but will replace with code documentation as the project develops.
+#### Gary's blog is a great reference for a simple pytorch model running with the C++ API. https://g-airborne.com/bringing-your-deep-learning-model-to-production-with-libtorch-part-1-why-libtorch/
 
-#### I worked through Gary's blog to get a simple pytorch model running with the C++ API. https://g-airborne.com/bringing-your-deep-learning-model-to-production-with-libtorch-part-1-why-libtorch/
+#### NeuralHydrology python code is in the directory ./nh, but this has not been kept up with the latest NH releases. Please see github.com/neuralhydrology/neuralhydrology for the latest versions of NeuralHydrology.
 
-#### NeuralHydrology python code is in the directory ./nh
+#### The cudalstm from NH is the simplest version. This has been re-written with Pytorch and traced for serialization with JIT. I saved the text output as a text file called "lstm-traced.py", this has the interpreted python code which has been converted to binary in the "lstm.ptc" file. The C++ version loads in the serialized lstm.ptc to run as a functino.
 
-#### Got rid of the cfg functionality, and just added a dictionary in the cudalstm, basemodel and head files, although I'm sure it is not needed in all three. Probably just one.
+#### lstn.cpp is the main file for the C++ implimentation of the lstm model. This is basically a prototyping platform, because the goal is to have this model running through the Next Generation National Water Model. The C++ code does these steps.
+* load in the scaling factors for the input/output data with a function called "read_scale_parms".
+* load in the data to be used in the forward pass for prediction with a function called "read_input".
+* The main function loops through the data and calls the LSTM.
+  * Load in the serialized lstm function "lstm.ptc" as the torch model
+  * Send that model to the device (CPU or GPU)
+  * Set model to evaluation mode (only running forward pass)
+  * Ensure that gradients are not calculated when using torch 
+  * import both forcing factors and scalers (using functions defind above). 
+  * Initialize model cell states and hidden states.
+  * Loop through time
+    * set the inputs
+    * call the model
+    * split up the output between states and streamflow
+  * check for errors 
 
-#### The cudalstm has been traced, and is in the nh folder. I saved the text output as a text file called "jit_traced_cudalstm.py", this has the re-written python code which has been converted to binary in the "cudalstm.ptc" file.
+#### Build and run the C++ code with the build-and-run.sh file, that uses CMakeList.txt to compile everything in the 'build' directory. And it also copies the executable out into the main directory, which should be called 'lstm_run'. The file then runs it.
 
-#### The next step, and one of the most important steps is loading in the data to be used in the forward pass for prediction. I currently have the data saved in a pickle file, but the Pytorch C++ API will not be able to load this in, so I need to convert it to either a binary file, or a json file. From what I have read on-line (https://discuss.pytorch.org/t/serialization-in-c-frontend-api/30200) the binary file option is prefered, because json is slow with large tensors. So, I just need to convert the model input data, and the model weights, into binary files, from their pickle files outputted from NeuralHydrology.
-
-#### Finally got the forcing data to inport with C++, not have to pass to pytorch.
-
-#### Tested the forcing data input: `g++ test_load_csv.cpp -o test_run`
-
-#### As of 11/20/2020 we are going to break down NeuralHydrology forward pass to it's bare bones in the file `lstm.py`. Tracing that file gives `lstm.ptc`. We call that file with `lstm.cpp`, which also should pass in the data and trained weights through tensors.
-
-#### 11/24/2020 Setting up the LSTM to run forward properly in Python first (lstm-python-run.py), before moving to C++
+#### To check that the Pytorch model is correct in the first place, before it is traced, loaded and run in C++, there are two all Python files that runs the model in the same way that we want. 
+* The first is called 'lstm-python-run.py', and it has the lstm model build up from scratch to mimic the NeuralHydrology forward pass. This is basically a prototype for the C++ code that we want to run. It runs the LSTM one time step at a time, saving the weights after a warmup period.
+* The second is called 'lstm-load-model-run.py' which loads in a model that was exported directly from NeuralHydrology. Note that this file requires the entire time series as input, so it actually won't really work for our purposes, but it is just for comparison.
