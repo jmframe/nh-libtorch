@@ -35,7 +35,8 @@ std::vector<torch::Tensor> read_input(std::string path, std::string scale_path, 
 {
     // Import forcing data and save in a vector of vectors. 
     // Columns are in order for trained NeuralHydrology code
-    // LWDOWN, PSFC, Q2D, RAINRATE, SWDOWN, T2D, U2D, V2D, lat, lon, area_sqkm
+    // WRONG:   LWDOWN, PSFC, Q2D, RAINRATE, SWDOWN, T2D, U2D, V2D, lat, lon, area_sqkm
+    // WRIGHT:  LWDOWN, PSFC, Q2D, RAINRATE, SWDOWN, T2D, U2D, V2D, lat, lon, area_sqkm
     // NOTE this order is important!!!
     
     CSVReader reader(path); 
@@ -129,12 +130,12 @@ int main(int argc, char** argv) {
     for (int i = 1; i < nrows; ++i){
         std::vector<torch::jit::IValue> inputs;
         // Create the model input for one time step
-	inputs.push_back(input_data[i].to(device));
+	      inputs.push_back(input_data[i].to(device));
         inputs.push_back(h_t);
         inputs.push_back(c_t);
-	// Run the model
+	      // Run the model
         auto output_tuple = model.forward(inputs);
-	//Get the outputs
+	      //Get the outputs
         torch::Tensor output = output_tuple.toTuple()->elements()[0].toTensor();
         torch::Tensor h_t = output_tuple.toTuple()->elements()[1].toTensor();
         torch::Tensor c_t = output_tuple.toTuple()->elements()[2].toTensor();
