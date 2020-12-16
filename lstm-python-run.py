@@ -45,7 +45,7 @@ head = xHEAD(hidden_layer_size, output_size)
 
 istart=71593    # 71593
 iend=72338
-warmup = np.minimum(seq_length, 1000)
+warmup = np.maximum(seq_length, 336)
 do_warmup = True
 
 data_dir = './data/'

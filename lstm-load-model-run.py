@@ -13,7 +13,7 @@ model = torch.load(data_dir+'sugar_creek_trained_model.pt')
 batch_size=1
 hidden_layer_size=64
 seq_length = 336
-istart=50000    # 71593
+istart=71593
 iend=72338
 
 with open(data_dir+'sugar_creek_input_all2.csv','r') as f:
