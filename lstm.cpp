@@ -138,23 +138,40 @@ int main(int argc, char** argv) {
     // Loop over each input
     std::cout << "Starting time loop \n";
     for (int i = istart-warmup; i < iend; ++i){
-        // Troubleshooting
-        // std::cout << i << std::endl;
-        // std::cout << input_data[i] << std::endl;
 
         std::vector<torch::jit::IValue> inputs;
+
+        // Troubleshooting
+//        std::cout << i << std::endl;
+//        std::cout << h_t << std::endl;
+
         // Create the model input for one time step
 	      inputs.push_back(input_data[i].to(device));
         inputs.push_back(h_t);
         inputs.push_back(c_t);
+
+        // Troubleshooting
+//        std::cout << inputs << std::endl;
+//        if (i>istart-warmup+4)
+//          break;
+
 	      // Run the model
         auto output_tuple = model.forward(inputs);
 	      //Get the outputs
         torch::Tensor output = output_tuple.toTuple()->elements()[0].toTensor()*25.801239+9.174726;
-        torch::Tensor h_t = output_tuple.toTuple()->elements()[1].toTensor();
-        torch::Tensor c_t = output_tuple.toTuple()->elements()[2].toTensor();
+        torch::Tensor h_t2 = output_tuple.toTuple()->elements()[1].toTensor();
+        torch::Tensor c_t2 = output_tuple.toTuple()->elements()[2].toTensor();
+        
+        for (int j = 0; j < 64; ++j){
+          h_t[0][0][j] = h_t2[0][0][j];
+          c_t[0][0][j] = c_t2[0][0][j];
+        }
+
+        // Troubleshooting
+//        std::cout << h_t << std::endl;
+
         if (i > istart)
-            std::cout << output[0][0][0] << std::endl;
+          std::cout << output[0][0][0] << std::endl;
     }
   
   }
@@ -163,13 +180,13 @@ int main(int argc, char** argv) {
     return 1;
   }
   
-  // We can list the model attributes in C++ like so:
-  for (const auto& attr : model.named_attributes())
-    std::cout << attr.name << std::endl;
-
-  // Get a list of methods in the model class
-  for (const auto& method : model.get_methods())
-    std::cout << method.name() << "\n";
+//  // We can list the model attributes in C++ like so:
+//  for (const auto& attr : model.named_attributes())
+//    std::cout << attr.name << std::endl;
+//
+//  // Get a list of methods in the model class
+//  for (const auto& method : model.get_methods())
+//    std::cout << method.name() << "\n";
 
    return 0;
 }

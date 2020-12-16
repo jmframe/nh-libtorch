@@ -140,3 +140,4 @@ for j, k in zip(output_list, obs):
 nse = 1-(diff_sum2/diff_sum_mean2)
 print('Nash-Suttcliffe Efficiency', nse)
 print('on {} samples'.format(count_samples))
+

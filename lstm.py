@@ -20,7 +20,7 @@ class LSTM(nn.Module):
         input_layer = input_layer.float()
         input_view = input_layer.view(self.seq_length, self.batch_size, self.input_size)
         output, (h_t, c_t) = self.lstm(input_view, (h_t,c_t))
-        prediction = self.head(h_t)
+        prediction = self.head(output)
         return prediction, h_t, c_t
 
 model = LSTM()
