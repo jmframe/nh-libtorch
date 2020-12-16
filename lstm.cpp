@@ -19,12 +19,12 @@ ScaleParams read_scale_params(std::string path)
     //Loop form first row to end of data
     for(; row != data.end(); ++row)
     {
-	for(int i = 0; i < (*row).size(); i++)
-	{   //row has var, mean, std_dev
- 	    //read into map keyed on var name, param name
-    	    params[ (*row)[0] ]["mean"] = strtof( (*row)[1].c_str(), NULL); 
-  	    params[ (*row)[0] ]["std_dev"] = strtof( (*row)[2].c_str(), NULL);
-	}
+    	for(int i = 0; i < (*row).size(); i++)
+    	{   //row has var, mean, std_dev
+     	    //read into map keyed on var name, param name
+        	params[ (*row)[0] ]["mean"] = strtof( (*row)[1].c_str(), NULL); 
+      	  params[ (*row)[0] ]["std_dev"] = strtof( (*row)[2].c_str(), NULL);
+    	}
     }
 
     return params;
@@ -36,9 +36,14 @@ std::vector<torch::Tensor> read_input(std::string path, std::string scale_path, 
     // Import forcing data and save in a vector of vectors. 
     // Columns are in order for trained NeuralHydrology code
     // WRONG:   LWDOWN, PSFC, Q2D, RAINRATE, SWDOWN, T2D, U2D, V2D, lat, lon, area_sqkm
-    // WRIGHT:  LWDOWN, PSFC, Q2D, RAINRATE, SWDOWN, T2D, U2D, V2D, lat, lon, area_sqkm
+    // WRIGHT: RAINRATE, Q2D, T2D, LWDOWN, SWDOWN, PSFC, U2D, V2D, area_sqkm, lat, lon
     // NOTE this order is important!!!
-    
+   
+    std::vector<double> meanz;
+    meanz = {0.0000467, 0.006817294, 283.25012, 302.84995, 182.7724, 94364.266, 1.0540344, 0.7839034, 474.2365, 39.949427, -96.920133};
+    std::vector<double> stdz;
+    stdz = { 0.00022482131, 0.004297631, 10.967861, 65.58242, 253.21057, 8891.513, 3.040779, 3.262279, 510.592316, 4.182431, 16.651526};
+ 
     CSVReader reader(path); 
     std::vector<std::vector<std::string> > data_str = reader.getData();
     nrows = data_str.size();
@@ -49,25 +54,29 @@ std::vector<torch::Tensor> read_input(std::string path, std::string scale_path, 
     //get the scaling parameters
     ScaleParams scale = read_scale_params(scale_path);
     //get the header row
-    auto header = data_str[0];
+    auto header = data_str[0]; 
+    std::cout << header << std::endl;
+
     //variables to parse into
     double temp, mean, std_dev;
     torch::Tensor t;
 
-    for (int i = 1; i < nrows ; ++i) {
-	//init an empty tensor
-	t =  torch::zeros( {1, ncols}, torch::dtype(torch::kFloat64) );
-        for (int j = 0; j < ncols; ++j){
-	    //data value as double
-            temp = strtof(data_str[i][j].c_str(),NULL);
-            mean = scale[ header[j] ]["mean"];
-	    std_dev = scale[ header[j] ]["std_dev"];
-	    t[0][j] =  (temp - mean) / std_dev;
-        }
-	out[i] = t;
-	//you can push data to a vector and crate the tensor from the blob, but have to clone it since the data would be scoped to the function
-	//so just create the empty tensor and fill it in, so the vector out owns the tensor pointer AND its data...
-	// torch::from_blob(data.data(), {1,ncols}, torch::dtype(torch::kFloat64)).clone();
+    for (int i = 1; i < nrows; ++i) {
+	    //init an empty tensor
+	    t =  torch::zeros( {1, ncols}, torch::dtype(torch::kFloat64) );
+      for (int j = 0; j < ncols; ++j){
+	      //data value as double
+        temp = strtof(data_str[i][j].c_str(),NULL);
+        //mean = scale[ header[j] ]["mean"];
+	      //std_dev = scale[ header[j] ]["std_dev"];
+	      mean = meanz[j];
+        std_dev = stdz[j];
+	      t[0][j] =  (temp - mean) / std_dev;
+      }
+	    out[i] = t;
+	  //you can push data to a vector and crate the tensor from the blob, but have to clone it since the data would be scoped to the function
+	  //so just create the empty tensor and fill it in, so the vector out owns the tensor pointer AND its data...
+	  // torch::from_blob(data.data(), {1,ncols}, torch::dtype(torch::kFloat64)).clone();
     }
     
     return out;
@@ -102,21 +111,21 @@ int main(int argc, char** argv) {
     // Set to `eval` model (just like Python)
     model.eval();
   
-//    // Get current value of `init_func`
-//    auto init_func = model.attr("init_func");
-//  
-//    // Set initialization function to ones
-//    model.setattr("init_func", "ones");
-  
     // Within this scope/thread, don't use gradients (again, like in Python)
     torch::NoGradGuard no_grad_;
 
     std::cout << "importing sugar creek data \n";
     int nrows, ncols;
+    int istart = 71594; // December 01 2015
+    int warmup = 336;
+    int iend = 72338;  
+    int n = iend - istart;
 
-    std::vector<torch::Tensor> input_data = read_input("data/sugar_creek_input.csv", "input_scaling.csv", nrows, ncols);
+    std::vector<torch::Tensor> input_data = read_input("data/sugar_creek_input_all3.csv", "data/input_scaling.csv", nrows, ncols);
+    std::cout << "sugar creek data has been imported \n";
 
     // create the rest of the input tensors
+    std::cout << "initializing LSTM states \n";
     auto options = torch::TensorOptions().dtype(torch::kFloat64).device(device);
     torch::Tensor h_t = torch::zeros({1, 1, 64}, options);
     torch::Tensor c_t = torch::zeros({1, 1, 64}, options);
@@ -127,7 +136,12 @@ int main(int argc, char** argv) {
     // `model.forward` does what you think it does; it returns an IValue
     // which we convert back to a Tensor
     // Loop over each input
-    for (int i = 1; i < nrows; ++i){
+    std::cout << "Starting time loop \n";
+    for (int i = istart-warmup; i < iend; ++i){
+        // Troubleshooting
+        // std::cout << i << std::endl;
+        // std::cout << input_data[i] << std::endl;
+
         std::vector<torch::jit::IValue> inputs;
         // Create the model input for one time step
 	      inputs.push_back(input_data[i].to(device));
@@ -136,11 +150,11 @@ int main(int argc, char** argv) {
 	      // Run the model
         auto output_tuple = model.forward(inputs);
 	      //Get the outputs
-        torch::Tensor output = output_tuple.toTuple()->elements()[0].toTensor();
+        torch::Tensor output = output_tuple.toTuple()->elements()[0].toTensor()*25.801239+9.174726;
         torch::Tensor h_t = output_tuple.toTuple()->elements()[1].toTensor();
         torch::Tensor c_t = output_tuple.toTuple()->elements()[2].toTensor();
-        std::cout << output;
-
+        if (i > istart)
+            std::cout << output[0][0][0] << std::endl;
     }
   
   }
