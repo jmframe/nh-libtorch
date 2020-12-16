@@ -1,5 +1,7 @@
 # Run a prediction from a trained NeuralHydrology model through the C++ Pytorch API
 
+![Results](results.png)
+
 #### Gary's blog is a great reference for a simple pytorch model running with the C++ API. https://g-airborne.com/bringing-your-deep-learning-model-to-production-with-libtorch-part-1-why-libtorch/
 
 #### NeuralHydrology python code is in the directory ./nh, but this has not been kept up with the latest NH releases. Please see github.com/neuralhydrology/neuralhydrology for the latest versions of NeuralHydrology.
