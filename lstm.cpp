@@ -141,19 +141,10 @@ int main(int argc, char** argv) {
 
         std::vector<torch::jit::IValue> inputs;
 
-        // Troubleshooting
-//        std::cout << i << std::endl;
-//        std::cout << h_t << std::endl;
-
         // Create the model input for one time step
 	      inputs.push_back(input_data[i].to(device));
         inputs.push_back(h_t);
         inputs.push_back(c_t);
-
-        // Troubleshooting
-//        std::cout << inputs << std::endl;
-//        if (i>istart-warmup+4)
-//          break;
 
 	      // Run the model
         auto output_tuple = model.forward(inputs);

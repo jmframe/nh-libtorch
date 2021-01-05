@@ -43,15 +43,16 @@ hidden_layer_size = 64
 model = xLSTM(input_size, hidden_layer_size, output_size, batch_size, seq_length)
 head = xHEAD(hidden_layer_size, output_size)
 
-istart=71593    # 71593
-iend=72338
+istart=337    # 71593 <- this number was for the NWMV3 data
+iend=1057
 warmup = np.maximum(seq_length, 336)
 do_warmup = True
 
 data_dir = './data/'
-with open(data_dir+'sugar_creek_input_all2.csv','r') as f:
+with open(data_dir+'cat-87.csv','r') as f:
     df = pd.read_csv(f)
-df = df.drop(['date','obs'], axis=1)
+#df = df.drop(['date','obs'], axis=1)
+df = df.drop(['date'], axis=1) #cat-87.csv has no observation data
 df = df.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
 input_tensor = torch.tensor(df.values)
 print(input_tensor[istart-warmup,:])
@@ -115,6 +116,7 @@ for t in range(istart, iend):
         output = head(lstm_output.transpose(0,1))
         output = output[0,0,0].numpy().tolist() * obs_std + obs_mean
         output_list.append(output)
+        print(output)
 
 print('output stats')
 print('mean', np.mean(output_list))
