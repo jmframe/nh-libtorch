@@ -57,13 +57,13 @@ df = df.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', '
 input_tensor = torch.tensor(df.values)
 print(input_tensor[istart-warmup,:])
 
-with open(data_dir+'sugar_creek_scaler.p', 'rb') as fb:
+with open(data_dir+'nwmv3_scaler.p', 'rb') as fb:
     scalers = pickle.load(fb)
-with  open(data_dir+'sugar_creek_basin_data.csv', 'r') as f:
-    sug_crek = pd.read_csv(f)
-obs = list(sug_crek.iloc[istart:iend,-1])
+#with  open(data_dir+'sugar_creek_basin_data.csv', 'r') as f:
+#    sug_crek = pd.read_csv(f)
+#obs = list(sug_crek.iloc[istart:iend,-1])
 
-p_dict = torch.load(data_dir+'sugar_creek_trained.pt', map_location=torch.device('cpu'))
+p_dict = torch.load(data_dir+'nwmv3_trained.pt', map_location=torch.device('cpu'))
 m_dict = model.state_dict()
 lstm_weights = {x:p_dict[x] for x in m_dict.keys()}
 head_weights = {}
@@ -76,8 +76,8 @@ obs_std = np.array(scalers['xarray_stds'].to_array())[-1]
 obs_mean = np.array(scalers['xarray_means'].to_array())[-1]
 xm = np.array(scalers['xarray_means'].to_array())[:-1]
 xs = np.array(scalers['xarray_stds'].to_array())[:-1]
-xm2 = np.array([xm[x] for x in list([3,2,5,0,4,1,6,7])])
-xs2 = np.array([xs[x] for x in list([3,2,5,0,4,1,6,7])])
+xm2 = np.array([xm[x] for x in list([3,2,5,0,4,1,6,7])]) # scalar means ordered to match forcing
+xs2 = np.array([xs[x] for x in list([3,2,5,0,4,1,6,7])]) # scalar stds ordered to match forcing
 att_means = np.append( np.array(scalers['attribute_means'].values)[0],np.array(scalers['attribute_means'].values)[1:3])
 att_stds = np.append(np.array(scalers['attribute_stds'].values)[0], np.array(scalers['attribute_stds'].values)[1:3])
 scaler_mean = np.append(xm2, att_means)
@@ -122,24 +122,24 @@ print('output stats')
 print('mean', np.mean(output_list))
 print('min', np.min(output_list))
 print('max', np.max(output_list))
-print('observation stats')
-print('mean', np.nanmean(obs))
-print('min', np.nanmin(obs))
-print('max', np.nanmax(obs))
+#print('observation stats')
+#print('mean', np.nanmean(obs))
+#print('min', np.nanmin(obs))
+#print('max', np.nanmax(obs))
 
-diff_sum2 = 0
-diff_sum_mean2 = 0
-obs_mean = np.nanmean(np.array(obs))
-count_samples = 0
-for j, k in zip(output_list, obs):
-    if np.isnan(k):
-        continue
-    count_samples += 1
-    mod_diff = j-k
-    mean_diff = k-obs_mean
-    diff_sum2 += np.power((mod_diff),2)
-    diff_sum_mean2 += np.power((mean_diff),2)
-nse = 1-(diff_sum2/diff_sum_mean2)
-print('Nash-Suttcliffe Efficiency', nse)
-print('on {} samples'.format(count_samples))
+#diff_sum2 = 0
+#diff_sum_mean2 = 0
+#obs_mean = np.nanmean(np.array(obs))
+#count_samples = 0
+#for j, k in zip(output_list, obs):
+#    if np.isnan(k):
+#        continue
+#    count_samples += 1
+#    mod_diff = j-k
+#    mean_diff = k-obs_mean
+#    diff_sum2 += np.power((mod_diff),2)
+#    diff_sum_mean2 += np.power((mean_diff),2)
+#nse = 1-(diff_sum2/diff_sum_mean2)
+#print('Nash-Suttcliffe Efficiency', nse)
+#print('on {} samples'.format(count_samples))
 
