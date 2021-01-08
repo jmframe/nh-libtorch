@@ -49,19 +49,37 @@ warmup = np.maximum(seq_length, 336)
 do_warmup = True
 
 data_dir = './data/'
-with open(data_dir+'cat-87.csv','r') as f:
-    df = pd.read_csv(f)
-#df = df.drop(['date','obs'], axis=1)
-df = df.drop(['date'], axis=1) #cat-87.csv has no observation data
-df = df.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
-input_tensor = torch.tensor(df.values)
-print(input_tensor[istart-warmup,:])
+
+# We don't need both of these, but sugar creek IL works, and cat-87 (sugar creek NC) does not work
+# Maybe because the 'warm-up' data is fake, or may be a unit problem...
+with open(data_dir+'sugar_creek_IL_input_test_dec2015.csv','r') as f:
+    df_il = pd.read_csv(f)
+obs = list(df_il['obs'])[istart-1:]
+df_il = df_il.drop(['date','obs'], axis=1)
+df_il = df_il.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
+
+print('precipitation stats')
+print('min', np.min(df_il['RAINRATE']))
+print('max', np.max(df_il['RAINRATE']))
+
+with open(data_dir+'cat-87-forcing.csv','r') as f:
+    df_nc = pd.read_csv(f)
+df_nc = df_nc.drop(['date'], axis=1) #cat-87.csv has no observation data
+df_nc = df_nc.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
+
+print('precipitation stats')
+print('min', np.min(df_nc['RAINRATE']))
+print('max', np.max(df_nc['RAINRATE']))
+
+#df_nc['area_sqkm'] = df_il['area_sqkm']
+#df_nc['lat'] = df_il['lat']
+#df_nc['lon'] = df_il['lon']
+df_nc['RAINRATE'] = df_nc['RAINRATE']*1000
+
+input_tensor = torch.tensor(df_nc.values)
 
 with open(data_dir+'nwmv3_scaler.p', 'rb') as fb:
     scalers = pickle.load(fb)
-#with  open(data_dir+'sugar_creek_basin_data.csv', 'r') as f:
-#    sug_crek = pd.read_csv(f)
-#obs = list(sug_crek.iloc[istart:iend,-1])
 
 p_dict = torch.load(data_dir+'nwmv3_trained.pt', map_location=torch.device('cpu'))
 m_dict = model.state_dict()
@@ -83,7 +101,6 @@ att_stds = np.append(np.array(scalers['attribute_stds'].values)[0], np.array(sca
 scaler_mean = np.append(xm2, att_means)
 scaler_std = np.append(xs2, att_stds)
 input_tensor = (input_tensor-scaler_mean)/scaler_std
-print(input_tensor[istart-warmup,:])
 
 if do_warmup:
     h_t = torch.zeros(1, batch_size, hidden_layer_size).float()
@@ -122,24 +139,27 @@ print('output stats')
 print('mean', np.mean(output_list))
 print('min', np.min(output_list))
 print('max', np.max(output_list))
-#print('observation stats')
-#print('mean', np.nanmean(obs))
-#print('min', np.nanmin(obs))
-#print('max', np.nanmax(obs))
+print('observation stats')
+print('mean', np.nanmean(obs))
+print('min', np.nanmin(obs))
+print('max', np.nanmax(obs))
 
-#diff_sum2 = 0
-#diff_sum_mean2 = 0
-#obs_mean = np.nanmean(np.array(obs))
-#count_samples = 0
-#for j, k in zip(output_list, obs):
-#    if np.isnan(k):
-#        continue
-#    count_samples += 1
-#    mod_diff = j-k
-#    mean_diff = k-obs_mean
-#    diff_sum2 += np.power((mod_diff),2)
-#    diff_sum_mean2 += np.power((mean_diff),2)
-#nse = 1-(diff_sum2/diff_sum_mean2)
-#print('Nash-Suttcliffe Efficiency', nse)
-#print('on {} samples'.format(count_samples))
+print('length obs', len(obs))
+print('length output', len(output_list))
+
+diff_sum2 = 0
+diff_sum_mean2 = 0
+obs_mean = np.nanmean(np.array(obs))
+count_samples = 0
+for j, k in zip(output_list, obs):
+    if np.isnan(k):
+        continue
+    count_samples += 1
+    mod_diff = j-k
+    mean_diff = k-obs_mean
+    diff_sum2 += np.power((mod_diff),2)
+    diff_sum_mean2 += np.power((mean_diff),2)
+nse = 1-(diff_sum2/diff_sum_mean2)
+print('Nash-Suttcliffe Efficiency', nse)
+print('on {} samples'.format(count_samples))
 
