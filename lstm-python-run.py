@@ -50,37 +50,29 @@ do_warmup = True
 
 data_dir = './data/'
 
-# We don't need both of these, but sugar creek IL works, and cat-87 (sugar creek NC) does not work
-# Maybe because the 'warm-up' data is fake, or may be a unit problem...
-with open(data_dir+'sugar_creek_IL_input_test_dec2015.csv','r') as f:
-    df_il = pd.read_csv(f)
-obs = list(df_il['obs'])[istart-1:]
-df_il = df_il.drop(['date','obs'], axis=1)
-df_il = df_il.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
-
-print('precipitation stats')
-print('min', np.min(df_il['RAINRATE']))
-print('max', np.max(df_il['RAINRATE']))
+#with open(data_dir+'sugar_creek_IL_input_test_dec2015.csv','r') as f:
+#    df = pd.read_csv(f)
+#obs = list(df['obs'])[istart-1:]
+#df = df.drop(['date','obs'], axis=1)
+#df = df.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
 
 with open(data_dir+'cat-87-forcing.csv','r') as f:
-    df_nc = pd.read_csv(f)
-df_nc = df_nc.drop(['date'], axis=1) #cat-87.csv has no observation data
-df_nc = df_nc.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
+    df = pd.read_csv(f)
+df = df.drop(['date'], axis=1) #cat-87.csv has no observation data
+df = df.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
+df['RAINRATE'] = df['RAINRATE']*1000
+with open(data_dir+'obs_q_02146330.csv', 'r') as f:
+    obs = pd.read_csv(f)
+obs.columns = ['date','q']
+obs = pd.Series(data=list(obs.q), index=pd.to_datetime(obs.date)).resample('60T').mean()[0:(iend-istart)]
 
-print('precipitation stats')
-print('min', np.min(df_nc['RAINRATE']))
-print('max', np.max(df_nc['RAINRATE']))
+input_tensor = torch.tensor(df.values)
 
-#df_nc['area_sqkm'] = df_il['area_sqkm']
-#df_nc['lat'] = df_il['lat']
-#df_nc['lon'] = df_il['lon']
-df_nc['RAINRATE'] = df_nc['RAINRATE']*1000
-
-input_tensor = torch.tensor(df_nc.values)
-
+#with open(data_dir+'nwmv3_normalarea_scaler.p', 'rb') as fb:
 with open(data_dir+'nwmv3_scaler.p', 'rb') as fb:
     scalers = pickle.load(fb)
 
+#p_dict = torch.load(data_dir+'nwmv3_normalarea_trained.pt', map_location=torch.device('cpu'))
 p_dict = torch.load(data_dir+'nwmv3_trained.pt', map_location=torch.device('cpu'))
 m_dict = model.state_dict()
 lstm_weights = {x:p_dict[x] for x in m_dict.keys()}
@@ -131,7 +123,7 @@ for t in range(istart, iend):
         h_t = h_t.transpose(0,1)
         c_t = c_t.transpose(0,1)
         output = head(lstm_output.transpose(0,1))
-        output = output[0,0,0].numpy().tolist() * obs_std + obs_mean
+        output = (output[0,0,0].numpy().tolist() * obs_std + obs_mean) #* df['area_sqkm'][0]
         output_list.append(output)
         print(output)
 
