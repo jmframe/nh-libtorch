@@ -4,6 +4,7 @@ import torch
 from torch import nn
 import pickle
 import matplotlib as plt
+import nwmv3_get_data
 
 torch.manual_seed(0)
 
@@ -50,30 +51,40 @@ do_warmup = True
 
 data_dir = './data/'
 
-#with open(data_dir+'sugar_creek_IL_input_test_dec2015.csv','r') as f:
-#    df = pd.read_csv(f)
-#obs = list(df['obs'])[istart-1:]
-#df = df.drop(['date','obs'], axis=1)
-#df = df.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
-
-with open(data_dir+'cat-87-forcing.csv','r') as f:
-    df = pd.read_csv(f)
-df = df.drop(['date'], axis=1) #cat-87.csv has no observation data
-df = df.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
-df['RAINRATE'] = df['RAINRATE']*1000
-with open(data_dir+'obs_q_02146330.csv', 'r') as f:
-    obs = pd.read_csv(f)
-obs.columns = ['date','q']
-obs = pd.Series(data=list(obs.q), index=pd.to_datetime(obs.date)).resample('60T').mean()[0:(iend-istart)]
+if False:
+    b = '03500240' #'03471500'
+    df = nwmv3_get_data.dynamic_data(b)
+    att = nwmv3_get_data.static_data()
+    att = att.loc[int(b), ['area_sqkm','lat','lon']]
+    df['area_sqkm'] = att['area_sqkm']
+    df['lat'] = att['lat']
+    df['lon'] = att['lon']
+    df = df.loc['2015-11-17':'2015-12-30']
+    obs = list(df.loc['2015-12-01':'2015-12-30' , 'obs'])
+    df = df.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
+    output_factor = df['area_sqkm'][0]
+else:
+    with open(data_dir+'cat-87-forcing.csv','r') as f:
+        df = pd.read_csv(f)
+    df = df.drop(['date'], axis=1) #cat-87.csv has no observation data
+    df = df.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
+    df['area_sqkm'] = 14.8
+    output_factor = df['area_sqkm'][0] * 35.315
+    # The precipitation rate units for the training set were obviously different than these forcings. Guessing it is a m -> mm conversion.
+    df['RAINRATE'] = df['RAINRATE']*1000
+    with open(data_dir+'obs_q_02146562.csv', 'r') as f:
+        obs = pd.read_csv(f)
+    obs = pd.Series(data=list(obs['90100_00060']), index=pd.to_datetime(obs.datetime)).resample('60T').mean()
+    obs = obs.loc['2015-12-01':'2015-12-30']
 
 input_tensor = torch.tensor(df.values)
 
-#with open(data_dir+'nwmv3_normalarea_scaler.p', 'rb') as fb:
-with open(data_dir+'nwmv3_scaler.p', 'rb') as fb:
+#with open(data_dir+'nwmv3_scaler.p', 'rb') as fb:
+with open(data_dir+'nwmv3_normalarea_scaler.p', 'rb') as fb:
     scalers = pickle.load(fb)
 
-#p_dict = torch.load(data_dir+'nwmv3_normalarea_trained.pt', map_location=torch.device('cpu'))
-p_dict = torch.load(data_dir+'nwmv3_trained.pt', map_location=torch.device('cpu'))
+#p_dict = torch.load(data_dir+'nwmv3_trained.pt', map_location=torch.device('cpu'))
+p_dict = torch.load(data_dir+'nwmv3_normalarea_trained.pt', map_location=torch.device('cpu'))
 m_dict = model.state_dict()
 lstm_weights = {x:p_dict[x] for x in m_dict.keys()}
 head_weights = {}
@@ -123,8 +134,9 @@ for t in range(istart, iend):
         h_t = h_t.transpose(0,1)
         c_t = c_t.transpose(0,1)
         output = head(lstm_output.transpose(0,1))
-        output = (output[0,0,0].numpy().tolist() * obs_std + obs_mean) #* df['area_sqkm'][0]
+        output = (output[0,0,0].numpy().tolist() * obs_std + obs_mean) * output_factor
         output_list.append(output)
+#        print(input_layer)
         print(output)
 
 print('output stats')
