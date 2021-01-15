@@ -4,7 +4,7 @@ import torch
 from torch import nn
 import pickle
 import matplotlib as plt
-import nwmv3_get_data
+import data_tools
 
 torch.manual_seed(0)
 
@@ -46,38 +46,55 @@ head = xHEAD(hidden_layer_size, output_size)
 
 istart=337    # 71593 <- this number was for the NWMV3 data
 iend=1057
-warmup = np.maximum(seq_length, 336)
+nwarm=336
+warmup = np.maximum(seq_length, nwarm)
 do_warmup = True
 
 data_dir = './data/'
 
 if False:
     b = '03500240' #'03471500'
-    df = nwmv3_get_data.dynamic_data(b)
-    att = nwmv3_get_data.static_data()
+    df = data_tools.nwmv3_dynamic_data(b)
+    att = data_tools.nwmv3_static_data()
     att = att.loc[int(b), ['area_sqkm','lat','lon']]
     df['area_sqkm'] = att['area_sqkm']
     df['lat'] = att['lat']
     df['lon'] = att['lon']
-    df = df.loc['2015-11-17':'2015-12-30']
+    df = df.loc['2015-11-17':'2015-12-30'] # This include the 336 sequence length.
     obs = list(df.loc['2015-12-01':'2015-12-30' , 'obs'])
     df = df.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
     output_factor = df['area_sqkm'][0]
 else:
-    with open(data_dir+'cat-87-forcing.csv','r') as f:
+    file_path = '/glade/scratch/jframe/data/nldas/35.313-80.813.nc' 
+    area_sqkm = 14.8
+    lat = 35.287
+    lon = -80.85
+    nldas = data_tools.load_hourly_nldas_forcings(file_path, lat, lon, area_sqkm)
+    nldas['U2D'] = nldas['Wind']/2
+    nldas['V2D'] = nldas['Wind']/2
+#    df = nldas.loc['2015-12-01':'2015-12-30', ['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
+    nldas = nldas.loc['2015-01-01':'2015-11-30', ['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
+    with open('/glade/scratch/jframe/data/sugar_creek_nc/forcing/cat-87.txt','r') as f:
         df = pd.read_csv(f)
-    df = df.drop(['date'], axis=1) #cat-87.csv has no observation data
+    df = df.rename(columns={'precip_rate':'RAINRATE', 'SPFH_2maboveground':'Q2D', 'TMP_2maboveground':'T2D', 
+                       'DLWRF_surface':'LWDOWN',  'DSWRF_surface':'SWDOWN',  'PRES_surface':'PSFC',
+                       'UGRD_10maboveground':'U2D', 'VGRD_10maboveground':'V2D'})
+    df['area_sqkm'] = [15.6 for i in range(df.shape[0])]
+    df['lat'] = [35.287 for i in range(df.shape[0])]
+    df['lon'] = [-80.85 for i in range(df.shape[0])]
+    df = df.drop(['time'], axis=1) #cat-87.csv has no observation data
     df = df.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
-    df['area_sqkm'] = 14.8
-    output_factor = df['area_sqkm'][0] * 35.315
+    output_factor = df['area_sqkm'][0] * 35.315 # from m3/s to ft3/s
     # The precipitation rate units for the training set were obviously different than these forcings. Guessing it is a m -> mm conversion.
     df['RAINRATE'] = df['RAINRATE']*1000
+    df = pd.concat([nldas.iloc[(nldas.shape[0]-nwarm):,:], df])
     with open(data_dir+'obs_q_02146562.csv', 'r') as f:
         obs = pd.read_csv(f)
     obs = pd.Series(data=list(obs['90100_00060']), index=pd.to_datetime(obs.datetime)).resample('60T').mean()
     obs = obs.loc['2015-12-01':'2015-12-30']
 
 input_tensor = torch.tensor(df.values)
+warmup_tensor = torch.tensor(nldas.values)
 
 #with open(data_dir+'nwmv3_scaler.p', 'rb') as fb:
 with open(data_dir+'nwmv3_normalarea_scaler.p', 'rb') as fb:
@@ -104,13 +121,14 @@ att_stds = np.append(np.array(scalers['attribute_stds'].values)[0], np.array(sca
 scaler_mean = np.append(xm2, att_means)
 scaler_std = np.append(xs2, att_stds)
 input_tensor = (input_tensor-scaler_mean)/scaler_std
+warmup_tensor = (input_tensor-scaler_mean)/scaler_std
 
 if do_warmup:
     h_t = torch.zeros(1, batch_size, hidden_layer_size).float()
     c_t = torch.zeros(1, batch_size, hidden_layer_size).float()
-    for t in range(istart-warmup, istart):
+    for t in range(337, warmup_tensor.shape[0]):
         with torch.no_grad():
-            input_layer = input_tensor[t-seq_length:t, :]
+            input_layer = warmup_tensor[t-seq_length:t, :]
             output, (h_t, c_t) = model(input_layer, h_t, c_t)
             h_t = h_t.transpose(0,1)
             c_t = c_t.transpose(0,1)
