@@ -2,7 +2,7 @@
 
 mkdir -p build && \
 cd build && \
-cmake -DCMAKE_PREFIX_PATH=/home/noaa_ml_water_modelers/libtorch .. && \
+cmake -DCMAKE_PREFIX_PATH=/glade/scratch/jframe/nh-libtorch .. && \
 make && \
 cp lstm_run ../ && \
 cd ../ && \
