@@ -44,9 +44,9 @@ hidden_layer_size = 64
 model = xLSTM(input_size, hidden_layer_size, output_size, batch_size, seq_length)
 head = xHEAD(hidden_layer_size, output_size)
 
-istart=337    # 71593 <- this number was for the NWMV3 data
+nwarm=672
+istart=nwarm+1    # 71593 <- this number was for the NWMV3 data
 iend=1057
-nwarm=336
 warmup = np.maximum(seq_length, nwarm)
 do_warmup = True
 
@@ -97,11 +97,11 @@ input_tensor = torch.tensor(df.values)
 warmup_tensor = torch.tensor(nldas.values)
 
 #with open(data_dir+'nwmv3_scaler.p', 'rb') as fb:
-with open(data_dir+'nwmv3_normalarea_scaler.p', 'rb') as fb:
+with open(data_dir+'nwmv3_normalarea_672_scaler.p', 'rb') as fb:
     scalers = pickle.load(fb)
 
 #p_dict = torch.load(data_dir+'nwmv3_trained.pt', map_location=torch.device('cpu'))
-p_dict = torch.load(data_dir+'nwmv3_normalarea_trained.pt', map_location=torch.device('cpu'))
+p_dict = torch.load(data_dir+'nwmv3_normalarea_672_trained.pt', map_location=torch.device('cpu'))
 m_dict = model.state_dict()
 lstm_weights = {x:p_dict[x] for x in m_dict.keys()}
 head_weights = {}
@@ -126,7 +126,7 @@ warmup_tensor = (input_tensor-scaler_mean)/scaler_std
 if do_warmup:
     h_t = torch.zeros(1, batch_size, hidden_layer_size).float()
     c_t = torch.zeros(1, batch_size, hidden_layer_size).float()
-    for t in range(337, warmup_tensor.shape[0]):
+    for t in range(istart, warmup_tensor.shape[0]):
         with torch.no_grad():
             input_layer = warmup_tensor[t-seq_length:t, :]
             output, (h_t, c_t) = model(input_layer, h_t, c_t)
@@ -145,7 +145,7 @@ h_t = torch.tensor(h_t).view(1,1,-1)
 c_t = np.genfromtxt('data/c_t_start.csv', skip_header=1, delimiter=",")[:,1]
 c_t = torch.tensor(c_t).view(1,1,-1)
 output_list = []
-for t in range(istart, iend):
+for t in range(istart, input_tensor.shape[0]):
     with torch.no_grad():
         input_layer = input_tensor[t-seq_length:t, :]
         lstm_output, (h_t, c_t) = model(input_layer, h_t, c_t)
@@ -184,4 +184,5 @@ for j, k in zip(output_list, obs):
 nse = 1-(diff_sum2/diff_sum_mean2)
 print('Nash-Suttcliffe Efficiency', nse)
 print('on {} samples'.format(count_samples))
-
+for i in obs:
+    print(i)

@@ -40,9 +40,12 @@ std::vector<torch::Tensor> read_input(std::string path, std::string scale_path, 
     // NOTE this order is important!!!
    
     std::vector<double> meanz;
-    meanz = {0.0000467, 0.006817294, 283.25012, 302.84995, 182.7724, 94364.266, 1.0540344, 0.7839034, 474.2365, 39.949427, -96.920133};
+//    meanz = {0.0000467, 0.006817294, 283.25012, 302.84995, 182.7724, 94364.266, 1.0540344, 0.7839034, 474.2365, 39.949427, -96.920133};
+    meanz = {0.0000422, 0.006754941, 283.35245, 298.0179, 191.4093, 92224.42, 1.0639832, 0.6383235, 409.477622, 38.771945, -96.486558};
     std::vector<double> stdz;
-    stdz = { 0.00022482131, 0.004297631, 10.967861, 65.58242, 253.21057, 8891.513, 3.040779, 3.262279, 510.592316, 4.182431, 16.651526};
+//    stdz = { 0.00022482131, 0.004297631, 10.967861, 65.58242, 253.21057, 8891.513, 3.040779, 3.262279, 510.592316, 4.182431, 16.651526};
+    stdz = {0.000213777, 0.00443235, 11.103534, 68.286644, 261.9189, 8617.37, 3.1770709, 3.433336, 542.945063, 6.012443, 18.294944};
+
  
     CSVReader reader(path); 
     std::vector<std::vector<std::string> > data_str = reader.getData();
@@ -64,14 +67,26 @@ std::vector<torch::Tensor> read_input(std::string path, std::string scale_path, 
     for (int i = 1; i < nrows; ++i) {
 	    //init an empty tensor
 	    t =  torch::zeros( {1, ncols}, torch::dtype(torch::kFloat64) );
+        
       for (int j = 0; j < ncols; ++j){
+
 	      //data value as double
         temp = strtof(data_str[i][j].c_str(),NULL);
+
+        //Multiplu precip to match units
+        if (j == 0){
+            std::cout << temp << std::endl;
+            std::cout << "multiplying precip \n" << std::endl;
+            temp = temp*1000;
+            std::cout << temp << std::endl;
+        }
+
         //mean = scale[ header[j] ]["mean"];
 	      //std_dev = scale[ header[j] ]["std_dev"];
 	      mean = meanz[j];
         std_dev = stdz[j];
 	      t[0][j] =  (temp - mean) / std_dev;
+
       }
 	    out[i] = t;
 	  //you can push data to a vector and crate the tensor from the blob, but have to clone it since the data would be scoped to the function
@@ -116,28 +131,27 @@ int main(int argc, char** argv) {
 
     std::cout << "importing sugar creek data \n";
     int nrows, ncols;
-    int istart = 71594; // December 01 2015
-    int warmup = 336;
-    int iend = 72338;  
-    int n = iend - istart;
 
-    std::vector<torch::Tensor> input_data = read_input("data/sugar_creek_input_all3.csv", "data/input_scaling.csv", nrows, ncols);
-    std::cout << "sugar creek data has been imported \n";
+//    std::vector<torch::Tensor> input_data = read_input("data/sugar_creek_IL_input_all3.csv", "data/input_scaling.csv", nrows, ncols);
+    std::vector<torch::Tensor> input_data = read_input("/glade/scratch/jframe/nh-libtorch/data/cat-87-forcing-cpp-nodate.csv", "data/input_scaling.csv", nrows, ncols);
+    std::cout << "sugar creek data has been imported \n" << std::endl;
 
     // create the rest of the input tensors
-    std::cout << "initializing LSTM states \n";
+    std::cout << "initializing LSTM states \n" << std::endl;
     auto options = torch::TensorOptions().dtype(torch::kFloat64).device(device);
     torch::Tensor h_t = torch::zeros({1, 1, 64}, options);
     torch::Tensor c_t = torch::zeros({1, 1, 64}, options);
     torch::Tensor output = torch::zeros({1}, options);
     
+    std::vector<double> outz;
+
     // Input to the model is a vector of "IValues" (tensors)
     //    std::vector<torch::jit::IValue> input = {input_tensor, h_t, c_t};
     // `model.forward` does what you think it does; it returns an IValue
     // which we convert back to a Tensor
     // Loop over each input
     std::cout << "Starting time loop \n";
-    for (int i = istart-warmup; i < iend; ++i){
+    for (int i = 1; i < nrows; ++i){
 
         std::vector<torch::jit::IValue> inputs;
 
@@ -148,36 +162,32 @@ int main(int argc, char** argv) {
 
 	      // Run the model
         auto output_tuple = model.forward(inputs);
+
 	      //Get the outputs
-        torch::Tensor output = output_tuple.toTuple()->elements()[0].toTensor()*25.801239+9.174726;
+        torch::Tensor output = output_tuple.toTuple()->elements()[0].toTensor() * 0.052799540 + 0.022887329;
         torch::Tensor h_t2 = output_tuple.toTuple()->elements()[1].toTensor();
         torch::Tensor c_t2 = output_tuple.toTuple()->elements()[2].toTensor();
-        
+       
+        // Update the states 
         for (int j = 0; j < 64; ++j){
           h_t[0][0][j] = h_t2[0][0][j];
           c_t[0][0][j] = c_t2[0][0][j];
         }
 
-        // Troubleshooting
-//        std::cout << h_t << std::endl;
-
-        if (i > istart)
-          std::cout << output[0][0][0] << std::endl;
+        // Print the output
+        //outz.push_back(output[0][0][0]*15.5);
+        std::cout << output[0][0][0]*15.5 << std::endl;
+        
     }
+//    std::cout << outz << std::endl;
   
   }
+
   catch (const c10::Error& e) {
     std::cerr << "An error occured: " << e.what() << std::endl;
     return 1;
   }
   
-//  // We can list the model attributes in C++ like so:
-//  for (const auto& attr : model.named_attributes())
-//    std::cout << attr.name << std::endl;
-//
-//  // Get a list of methods in the model class
-//  for (const auto& method : model.get_methods())
-//    std::cout << method.name() << "\n";
 
    return 0;
 }

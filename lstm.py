@@ -26,7 +26,7 @@ class LSTM(nn.Module):
 model = LSTM()
 
 data_dir = './data/'
-pretrained_dict = torch.load(data_dir+'sugar_creek_trained.pt', map_location=torch.device('cpu'))
+pretrained_dict = torch.load(data_dir+'nwmv3_normalarea_trained.pt', map_location=torch.device('cpu'))
 pretrained_dict['head.weight'] = pretrained_dict.pop('head.net.0.weight')
 pretrained_dict['head.bias'] = pretrained_dict.pop('head.net.0.bias')
 model.load_state_dict(pretrained_dict)
