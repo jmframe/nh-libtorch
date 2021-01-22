@@ -44,8 +44,8 @@ hidden_layer_size = 64
 model = xLSTM(input_size, hidden_layer_size, output_size, batch_size, seq_length)
 head = xHEAD(hidden_layer_size, output_size)
 
-nwarm=672
-istart=nwarm+1    # 71593 <- this number was for the NWMV3 data
+nwarm=1772
+istart=nwarm    # 71593 <- this number was for the NWMV3 data
 iend=1057
 warmup = np.maximum(seq_length, nwarm)
 do_warmup = True
@@ -79,9 +79,9 @@ else:
     df = df.rename(columns={'precip_rate':'RAINRATE', 'SPFH_2maboveground':'Q2D', 'TMP_2maboveground':'T2D', 
                        'DLWRF_surface':'LWDOWN',  'DSWRF_surface':'SWDOWN',  'PRES_surface':'PSFC',
                        'UGRD_10maboveground':'U2D', 'VGRD_10maboveground':'V2D'})
-    df['area_sqkm'] = [15.6 for i in range(df.shape[0])]
-    df['lat'] = [35.287 for i in range(df.shape[0])]
-    df['lon'] = [-80.85 for i in range(df.shape[0])]
+    df['area_sqkm'] = [area_sqkm for i in range(df.shape[0])]
+    df['lat'] = [lat for i in range(df.shape[0])]
+    df['lon'] = [lon for i in range(df.shape[0])]
     df = df.drop(['time'], axis=1) #cat-87.csv has no observation data
     df = df.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
     output_factor = df['area_sqkm'][0] * 35.315 # from m3/s to ft3/s
@@ -96,12 +96,10 @@ else:
 input_tensor = torch.tensor(df.values)
 warmup_tensor = torch.tensor(nldas.values)
 
-#with open(data_dir+'nwmv3_scaler.p', 'rb') as fb:
-with open(data_dir+'nwmv3_normalarea_672_scaler.p', 'rb') as fb:
+with open(data_dir+'nwmv3_nosnow_normalarea_672_scaler.p', 'rb') as fb:
     scalers = pickle.load(fb)
 
-#p_dict = torch.load(data_dir+'nwmv3_trained.pt', map_location=torch.device('cpu'))
-p_dict = torch.load(data_dir+'nwmv3_normalarea_672_trained.pt', map_location=torch.device('cpu'))
+p_dict = torch.load(data_dir+'nwmv3_nosnow_normalarea_672_trained.pt', map_location=torch.device('cpu'))
 m_dict = model.state_dict()
 lstm_weights = {x:p_dict[x] for x in m_dict.keys()}
 head_weights = {}
@@ -184,5 +182,3 @@ for j, k in zip(output_list, obs):
 nse = 1-(diff_sum2/diff_sum_mean2)
 print('Nash-Suttcliffe Efficiency', nse)
 print('on {} samples'.format(count_samples))
-for i in obs:
-    print(i)

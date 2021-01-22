@@ -1,0 +1,13 @@
+variable,mean,std_dev
+Precip_rate,4.726264e-05,0.00025685653
+SPFH_2maboveground_kg_per_kg,0.008363288,0.0045798197
+TMP_2maboveground_K,287.22906,10.206727
+DLWRF_surface_W_per_meters_squared,324.317,65.081
+DSWRF_surface_W_per_meters_squared,194.36569,265.8995
+PRES_surface_Pa,97301.06,3514.879
+UGRD_10maboveground_meters_per_second,0.6409403,2.9215448
+VGRD_10maboveground_meters_per_second,0.6686473,3.5321035
+Area_Square_km,309.55147533333337,222.60185322278596
+Latitude,36.2614258036894,4.971770350738615
+Longitude,-93.24146674661078,15.402044685274005
+obs,0.021793555,0.05899707
