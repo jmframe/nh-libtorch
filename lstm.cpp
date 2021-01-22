@@ -40,11 +40,15 @@ std::vector<torch::Tensor> read_input(std::string path, std::string scale_path, 
     // NOTE this order is important!!!
    
     std::vector<double> meanz;
-//    meanz = {0.0000467, 0.006817294, 283.25012, 302.84995, 182.7724, 94364.266, 1.0540344, 0.7839034, 474.2365, 39.949427, -96.920133};
-    meanz = {0.0000422, 0.006754941, 283.35245, 298.0179, 191.4093, 92224.42, 1.0639832, 0.6383235, 409.477622, 38.771945, -96.486558};
     std::vector<double> stdz;
+//    meanz = {0.0000467, 0.006817294, 283.25012, 302.84995, 182.7724, 94364.266, 1.0540344, 0.7839034, 474.2365, 39.949427, -96.920133};
 //    stdz = { 0.00022482131, 0.004297631, 10.967861, 65.58242, 253.21057, 8891.513, 3.040779, 3.262279, 510.592316, 4.182431, 16.651526};
-    stdz = {0.000213777, 0.00443235, 11.103534, 68.286644, 261.9189, 8617.37, 3.1770709, 3.433336, 542.945063, 6.012443, 18.294944};
+    //nwmv3_normalarea_scaler
+//    meanz = {0.0000422, 0.006754941, 283.35245, 298.0179, 191.4093, 92224.42, 1.0639832, 0.6383235, 409.477622, 38.771945, -96.486558};
+//    stdz = {0.000213777, 0.00443235, 11.103534, 68.286644, 261.9189, 8617.37, 3.1770709, 3.433336, 542.945063, 6.012443, 18.294944};
+    //nwmv3_nosnow_normalarea_672_scaler
+    meanz = {0.00004726, 0.00836329, 287.22906494, 324.31698608, 194.36569214, 97301.06250000, 0.64094031, 0.66864729, 309.55147533, 36.2614258, -93.24146675};
+    stdz = {0.00025686, 0.00457982, 10.20672703, 65.08100128, 265.89950562, 3514.87890625, 2.92154479, 3.53210354, 222.60185322, 4.97177035, 15.40204469};
 
  
     CSVReader reader(path); 
@@ -74,12 +78,9 @@ std::vector<torch::Tensor> read_input(std::string path, std::string scale_path, 
         temp = strtof(data_str[i][j].c_str(),NULL);
 
         //Multiplu precip to match units
-        if (j == 0){
-            std::cout << temp << std::endl;
-            std::cout << "multiplying precip \n" << std::endl;
+        if (j == 0)
+          if (i>16033)
             temp = temp*1000;
-            std::cout << temp << std::endl;
-        }
 
         //mean = scale[ header[j] ]["mean"];
 	      //std_dev = scale[ header[j] ]["std_dev"];
@@ -133,7 +134,7 @@ int main(int argc, char** argv) {
     int nrows, ncols;
 
 //    std::vector<torch::Tensor> input_data = read_input("data/sugar_creek_IL_input_all3.csv", "data/input_scaling.csv", nrows, ncols);
-    std::vector<torch::Tensor> input_data = read_input("/glade/scratch/jframe/nh-libtorch/data/cat-87-forcing-cpp-nodate.csv", "data/input_scaling.csv", nrows, ncols);
+    std::vector<torch::Tensor> input_data = read_input("/glade/scratch/jframe/data/sugar_creek_nc/forcing_with_warmup/cat-87-nodate.csv", "data/input_scaling.csv", nrows, ncols);
     std::cout << "sugar creek data has been imported \n" << std::endl;
 
     // create the rest of the input tensors
@@ -175,8 +176,8 @@ int main(int argc, char** argv) {
         }
 
         // Print the output
-        //outz.push_back(output[0][0][0]*15.5);
-        std::cout << output[0][0][0]*15.5 << std::endl;
+        if (i>16033)
+            std::cout << output[0][0][0]*15.617*35.315 << std::endl;
         
     }
 //    std::cout << outz << std::endl;

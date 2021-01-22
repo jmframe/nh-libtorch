@@ -1,8 +1,10 @@
 import torch
 from torch import nn
 import pickle
+import numpy as np
 
 torch.manual_seed(0)
+data_dir = './data/'
 
 class LSTM(nn.Module):
     def __init__(self, input_size=11, hidden_layer_size=64, output_size=1, batch_size=1, seq_length=1):
@@ -25,8 +27,7 @@ class LSTM(nn.Module):
 
 model = LSTM()
 
-data_dir = './data/'
-pretrained_dict = torch.load(data_dir+'nwmv3_normalarea_trained.pt', map_location=torch.device('cpu'))
+pretrained_dict = torch.load(data_dir+'nwmv3_nosnow_normalarea_672_trained.pt', map_location=torch.device('cpu'))
 pretrained_dict['head.weight'] = pretrained_dict.pop('head.net.0.weight')
 pretrained_dict['head.bias'] = pretrained_dict.pop('head.net.0.bias')
 model.load_state_dict(pretrained_dict)
