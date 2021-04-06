@@ -222,35 +222,38 @@ class bmi_LSTM(nn.Module):
         self.warmup = np.maximum(self.seq_length, self.nwarm)
 
         self.output_list = []
-           
-    #------------------------------------------------------------       
-    def update( self, dt=-1, REPORT=True ):
-        return 0
 
+        self.streamflow = np.nan
+
+        if self.is_do_warmup:
+            self.do_warmup()
+        
+        self.read_initial_states()
+
+        self.t = self.seq_length # Need to start at the sequence length for lookback
+
+    #------------------------------------------------------------ 
+    def update(self):
+        with torch.no_grad():
+            print('updating for t: ', self.t)
+            start_this_seq = self.t - self.seq_length
+            print('start_this_seq', start_this_seq)
+            self.input_layer = self.input_tensor[start_this_seq:self.t, :]
+            lstm_output, self.h_t, self.c_t = self.forward(self.input_layer, self.h_t, self.c_t)
+            self.streamflow = (lstm_output[0,0,0].numpy().tolist() * self.obs_std + self.obs_mean) * self.output_factor
+            self.output_list.append(self.streamflow)
+            self.t += 1
+            print('for time: {} lstm output: {}'.format(self.t,self.streamflow))
+    
+    #------------------------------------------------------------ 
+    def update_until(self, last_update):
+        first_update=self.t
+        for t in range(first_update, last_update):
+            self.update()
     #------------------------------------------------------------    
     def finalize( self ):
         return 0
 
-    #------------------------------------------------------------ 
-    def run_model( self, cfg_file=None):
-
-        for t in range(self.istart, self.input_tensor.shape[0]):
-            with torch.no_grad():
-                self.input_layer = self.input_tensor[t-self.seq_length:t, :]
-                lstm_output, self.h_t, self.c_t = self.forward(self.input_layer, self.h_t, self.c_t)
-                output = (lstm_output[0,0,0].numpy().tolist() * self.obs_std + self.obs_mean) * self.output_factor
-                self.output_list.append(output)
-                print(output)
-        print('output stats')
-        print('mean', np.mean(self.output_list))
-        print('min', np.min(self.output_list))
-        print('max', np.max(self.output_list))
-        print('observation stats')
-        print('mean', np.nanmean(self.obs))
-        print('min', np.nanmin(self.obs))
-        print('max', np.nanmax(self.obs))
-        print('length obs', len(self.obs))
-        print('length output', len(self.output_list))
 
     #------------------------------------------------------------
     # Non-BMI functions that are only used internally.
@@ -404,3 +407,23 @@ class bmi_LSTM(nn.Module):
         nse = 1-(diff_sum2/diff_sum_mean2)
         print('Nash-Suttcliffe Efficiency', nse)
         print('on {} samples'.format(count_samples))
+
+    #------------------------------------------------------------ 
+    def run_model( self):
+        for self.t in range(self.istart, self.input_tensor.shape[0]):
+            with torch.no_grad():
+                self.input_layer = self.input_tensor[self.t-self.seq_length:self.t, :]
+                lstm_output, self.h_t, self.c_t = self.forward(self.input_layer, self.h_t, self.c_t)
+                output = (lstm_output[0,0,0].numpy().tolist() * self.obs_std + self.obs_mean) * self.output_factor
+                self.output_list.append(output)
+                print(output)
+        print('output stats')
+        print('mean', np.mean(self.output_list))
+        print('min', np.min(self.output_list))
+        print('max', np.max(self.output_list))
+        print('observation stats')
+        print('mean', np.nanmean(self.obs))
+        print('min', np.nanmin(self.obs))
+        print('max', np.nanmax(self.obs))
+        print('length obs', len(self.obs))
+        print('length output', len(self.output_list))
