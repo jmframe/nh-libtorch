@@ -8,7 +8,7 @@ import matplotlib as plt
 data_dir = './data/'
 torch.manual_seed(0)
 
-model = torch.load(data_dir+'sugar_creek_trained_model.pt')
+model = torch.load(data_dir+'sugar_creek_IL_trained_model.pt')
 
 batch_size=1
 hidden_layer_size=64

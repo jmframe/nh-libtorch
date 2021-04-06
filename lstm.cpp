@@ -128,13 +128,13 @@ int main(int argc, char** argv) {
     model.eval();
   
     // Within this scope/thread, don't use gradients (again, like in Python)
-    torch::NoGradGuard no_grad_;
+    torch::NoGradGuard no_grad;
 
     std::cout << "importing sugar creek data \n";
     int nrows, ncols;
 
 //    std::vector<torch::Tensor> input_data = read_input("data/sugar_creek_IL_input_all3.csv", "data/input_scaling.csv", nrows, ncols);
-    std::vector<torch::Tensor> input_data = read_input("/glade/scratch/jframe/data/sugar_creek_nc/forcing_with_warmup/cat-87-nodate.csv", "data/input_scaling.csv", nrows, ncols);
+    std::vector<torch::Tensor> input_data = read_input("/glade/scratch/jframe/data/sugar_creek_nc/forcing_with_warmup/cat-87-nodate.csv", "data/nosnow_normalarea_672/input_scaling.csv", nrows, ncols);
     std::cout << "sugar creek data has been imported \n" << std::endl;
 
     // create the rest of the input tensors
@@ -170,10 +170,12 @@ int main(int argc, char** argv) {
         torch::Tensor c_t2 = output_tuple.toTuple()->elements()[2].toTensor();
        
         // Update the states 
-        for (int j = 0; j < 64; ++j){
-          h_t[0][0][j] = h_t2[0][0][j];
-          c_t[0][0][j] = c_t2[0][0][j];
-        }
+       // for (int j = 0; j < 64; ++j){
+       //   h_t[0][0][j] = h_t2[0][0][j];
+       //   c_t[0][0][j] = c_t2[0][0][j];
+       // }
+        h_t = h_t2;
+        c_t = c_t2;
 
         // Print the output
         if (i>16033)

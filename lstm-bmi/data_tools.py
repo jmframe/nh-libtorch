@@ -2,6 +2,7 @@ import pickle
 import numpy as np
 import pandas as pd
 import xarray
+from pathlib import Path
 
 def nwmv3_dynamic_data(basin: str) -> pd.DataFrame:
     data_dir = '/glade/scratch/jframe/neuralhydrology/data/'
@@ -34,7 +35,7 @@ def nwmv3_dynamic_data(basin: str) -> pd.DataFrame:
     return df
 
 def nwmv3_static_data() -> pd.DataFrame:
-    data_dir = '/glade/scratch/jframe/data/nwmv3/'
+    data_dir = '/glade/work/jframe/data/nwmv3/'
     
     # Load attributes
     hi = pd.read_csv(data_dir+'meta/domainMeta_HI.csv')
