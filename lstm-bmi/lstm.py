@@ -201,8 +201,11 @@ class bmi_LSTM(nn.Module):
         
         p_dict = torch.load(self.trained_model_file, map_location=torch.device('cpu'))
         m_dict = self.state_dict()
+
+        # Changing the name of the head weights, since different in NH
         p_dict['head.weight'] = p_dict.pop('head.net.0.weight')
         p_dict['head.bias'] = p_dict.pop('head.net.0.bias')
+
         lstm_weights = {x:p_dict[x] for x in m_dict.keys()}
         self.load_state_dict(lstm_weights)
         
@@ -230,7 +233,7 @@ class bmi_LSTM(nn.Module):
         
         self.read_initial_states()
 
-        self.t = self.seq_length # Need to start at the sequence length for lookback
+        self.t = self.istart
 
     #------------------------------------------------------------ 
     def update(self):
@@ -361,6 +364,8 @@ class bmi_LSTM(nn.Module):
         df = df.loc[:,['RAINRATE', 'Q2D', 'T2D', 'LWDOWN',  'SWDOWN',  'PSFC',  'U2D', 'V2D', 'area_sqkm', 'lat', 'lon']]
 
         self.output_factor = df['area_sqkm'][0] * 35.315 # from m3/s to ft3/s
+
+        self.steps_in_forcing = df.shape[0]
 
         self.forcings = pd.concat([self.nldas.iloc[(self.nldas.shape[0] - self.nwarm):,:], df])
 
