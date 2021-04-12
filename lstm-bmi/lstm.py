@@ -317,19 +317,29 @@ class bmi_LSTM(nn.Module):
     def do_warmup(self):
         self.h_t = torch.zeros(1, self.batch_size, self.hidden_layer_size).float()
         self.c_t = torch.zeros(1, self.batch_size, self.hidden_layer_size).float()
-        for t in range(self.istart, self.warmup_tensor.shape[0]):
-            with torch.no_grad():
-                input_layer = self.warmup_tensor[t-self.seq_length:t, :]
-                output, self.h_t, self.c_t = self.forward(input_layer, self.h_t, self.c_t)
-                h_t = self.h_t.transpose(0,1)
-                c_t = self.c_t.transpose(0,1)
-                if t == self.warmup_tensor.shape[0] - 1:
-                    h_t_np = h_t[0,0,:].numpy()
-                    h_t_df = pd.DataFrame(h_t_np)
-                    h_t_df.to_csv(self.h_t_init_file)
-                    c_t_np = c_t[0,0,:].numpy()
-                    c_t_df = pd.DataFrame(c_t_np)
-                    c_t_df.to_csv(self.c_t_init_file)
+#        for n_warmup_loops in range(10):
+#            #for t in range(self.seq_length, self.warmup_tensor.shape[0]):
+#            for t in range(self.seq_length+1, self.warmup_tensor.shape[0]):
+#                with torch.no_grad():
+#                    input_layer = self.warmup_tensor[t-self.seq_length:t, :]
+#                    output, self.h_t, self.c_t = self.forward(input_layer, self.h_t, self.c_t)
+#                    h_t = self.h_t.transpose(0,1)
+#                    c_t = self.c_t.transpose(0,1)
+#                    if t == self.warmup_tensor.shape[0] - 1:
+#                        h_t_np = h_t[0,0,:].numpy()
+#                        h_t_df = pd.DataFrame(h_t_np)
+#                        h_t_df.to_csv(self.h_t_init_file)
+#                        c_t_np = c_t[0,0,:].numpy()
+#                        c_t_df = pd.DataFrame(c_t_np)
+#                        c_t_df.to_csv(self.c_t_init_file)
+        h_t = self.h_t.transpose(0,1)
+        c_t = self.c_t.transpose(0,1)
+        h_t_np = h_t[0,0,:].numpy()
+        h_t_df = pd.DataFrame(h_t_np)
+        h_t_df.to_csv(self.h_t_init_file)
+        c_t_np = c_t[0,0,:].numpy()
+        c_t_df = pd.DataFrame(c_t_np)
+        c_t_df.to_csv(self.c_t_init_file)
 
     #-------------------------------------------------------------------
     def read_initial_states(self):
