@@ -9,18 +9,6 @@ import numpy as np
 import pandas as pd
 import pickle
 
-#----------------------------------------
-# Create an instance of the LSTM model
-# and then call its "run_model()" method
-#---------------------------------------
-def test_lstm_model():
-    lstm_model = bmi_LSTM()
-    read_cfg_file('lstm-info.cfg')
-    lstm_model.initialize()
-    lstm_model.run_model()
-    lstm_model.finalize()
-
-
 class bmi_LSTM(nn.Module):
     #--------------------------------------------------------------------------------------------------
     # This is the LSTM model. Based on the simple "CudaLSTM" in NeuralHydrolog
@@ -34,6 +22,7 @@ class bmi_LSTM(nn.Module):
         self.batch_size = batch_size # We shouldn't neeed to do a higher batch size.
         self.lstm = nn.LSTM(input_size, hidden_layer_size)
         self.head = nn.Linear(hidden_layer_size, output_size)
+        self._values = {}
 
     def forward(self, input_layer, h_t, c_t):
         h_t = h_t.float()
@@ -48,13 +37,13 @@ class bmi_LSTM(nn.Module):
     # Required, static attributes of the model
     #----------------------------------------------
     _att_map = {
-        'model_name':         'LSTM for EMELI',
+        'model_name':         'LSTM for Next Generation NWM',
         'version':            '1.0',
         'author_name':        'Jonathan Martin Frame',
         'grid_type':          'none',
-        'time_step_type':     '1H',
+        'time_step_type':     'donno',
         'step_method':        'none',
-        'time_units':         'none' }
+        'time_units':         '1 hour' }
 
     #---------------------------------------------
     # Input variable names (CSDMS standard names)
@@ -133,6 +122,39 @@ class bmi_LSTM(nn.Module):
     #-------------------------------------------------------------------
     # BMI: Variable Information Functions
     #-------------------------------------------------------------------
+    #def get_value(self, var_name, dest):
+    def get_value(self, var_name):
+        """Copy of values.
+        Parameters
+        ----------
+        var_name : str
+            Name of variable as CSDMS Standard Name.
+        dest : ndarray
+            A numpy array into which to place the values.
+        Returns
+        -------
+        array_like
+            Copy of values.
+        """
+        #dest[:] = self.get_value_ptr(var_name).flatten()
+        return self.get_value_ptr(var_name)
+        #return dest
+
+    #-------------------------------------------------------------------
+    def get_value_ptr(self, var_name):
+        """Reference to values.
+        Parameters
+        ----------
+        var_name : str
+            Name of variable as CSDMS Standard Name.
+        Returns
+        -------
+        array_like
+            Value array.
+        """
+        return self._values[var_name]
+
+    #-------------------------------------------------------------------
     def get_var_name(self, long_var_name):
                               
         return self._var_name_map[ long_var_name ]
@@ -145,7 +167,7 @@ class bmi_LSTM(nn.Module):
     #-------------------------------------------------------------------
     def get_var_type(self, long_var_name):
 
-        return str( self.get_value( long_var_name ).dtype )
+        return str( type(self.get_value( long_var_name )) )
 
     #-------------------------------------------------------------------
     def get_var_rank(self, long_var_name):
@@ -227,6 +249,7 @@ class bmi_LSTM(nn.Module):
         self.output_list = []
 
         self.streamflow = np.nan
+        self._values = {"land_surface_water__runoff_volume_flux": self.streamflow}
 
         if self.is_do_warmup:
             self.do_warmup()
@@ -284,6 +307,7 @@ class bmi_LSTM(nn.Module):
         # Read values from cfg_file and store in "self"
         #----------------------------------------------
         self.seed                =  int(config.get('lstm-bmi','seed'))
+        self.dt                  = str(config.get('lstm-bmi', 'time_step'))
         self.input_size          = int(config.get('lstm-bmi','input_size'))
         self.hidden_layer_size   = int(config.get('lstm-bmi', 'hidden_layer_size'))
         self.output_size         = int(config.get('lstm-bmi', 'output_size'))
@@ -442,3 +466,50 @@ class bmi_LSTM(nn.Module):
         print('max', np.nanmax(self.obs))
         print('length obs', len(self.obs))
         print('length output', len(self.output_list))
+
+    #---------------------------------------------------------------- 
+    def run_unit_tests(self):
+        #------------------------------------------------------------ 
+        if self.get_output_var_names()[0] == 'land_surface_water__runoff_volume_flux':
+            print('Unit test passed: get_output_var_names')
+        else:
+            print('Unit test failed: get_output_var_names')
+        #------------------------------------------------------------ 
+        if self.get_var_name('atmosphere_water__liquid_equivalent_precipitation_rate') == 'RAINRATE':
+            print('Unit test passed: get_var_name')
+        else:
+            print('Unit test failed: get_var_name')
+        #------------------------------------------------------------ 
+        if self.get_var_units('atmosphere_water__liquid_equivalent_precipitation_rate') == 'kg m-2':
+            if self.get_var_units("land_surface_water__runoff_volume_flux") == 'mm':
+                print('Unit test passed: get_var_units')
+            else:
+                print('Unit test failed: get_var_units on land_surface_water')
+        else:
+            print('Unit test failed: get_var_units on atmospheric_water')
+        #------------------------------------------------------------ 
+        if self.get_var_rank("land_surface_water__runoff_volume_flux") == 0:
+            print('Unit test passed: get_var_rank')
+        else:
+            print('Unit test failed: get_var_rank')
+        #------------------------------------------------------------ 
+        #------------------------------------------------------------ 
+        #------------------------------------------------------------ 
+        #------------------------------------------------------------ 
+        #------------------------------------------------------------ 
+        #------------------------------------------------------------ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
