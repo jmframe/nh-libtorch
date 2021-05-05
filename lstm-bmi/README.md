@@ -6,11 +6,12 @@ This module is dependent on a trained deep learning model. The forward pass of t
 
 # Data requirements
 All data required for a test run of this model is available in the ./data/ directory.  
-* Forcing data for test period: forcing-cat-87.txt
-* Forcing data for warmup period: 35.313-80.813.nc
-* Trained model weights: nwmv3_normalarea_trained.pt
-* Scalers (mean and stdev. from training period): nwmv3_normalarea_scaler.p
-* Observation values from a nearby gauge: obs_q_02146562.csv
+* Forcing data for test period: **forcing-cat-87.txt**
+* Forcing data for warmup period: **35.313-80.813.nc**
+* Trained model weights: **nwmv3_normalarea_trained.pt**
+* Scalers (mean and stdev. from training period): **nwmv3_normalarea_scaler.p**
+* Observation values from a nearby gauge: **obs_q_02146562.csv**  
+
 Training data is available through many sources. LSTM models are often trained on the CAMELS dataset, and those data are found on the [NCAR Wedsite](https://ral.ucar.edu/solutions/products/camels).  
 Warmup data for this model was downloaded from [LDAS](https://ldas.gsfc.nasa.gov/nldas/v2/forcing).  
 Static catchment attributes (longitude/latitude and elevation) was collected from Google Earth.  
@@ -18,13 +19,16 @@ Forcing data for the test period (December 2015) was provided by the NGen Framew
 
 # How to run this model
 Running this model requires python and the following libraries:
-* Pytorch
-* time
-* data_tools
+* bottleneck
 * configparser
+* data_tools
+* netcdf4 
 * numpy
 * pandas
 * pickle
+* Pytorch
+* time
+* xarray 
 
 A trained LSTM model will run on any basin with the required inputs. But be cautious ensure the model was trained and tested appropriately. The trained model included here was trained on ~80 basins from those chosen to be included in the NWM V3.0  
 The first step to running the LSTM is to make sure a python environment containing pytorch, and a few others (listed above), is installed and activated. The easiest way to do that is to download the environment file from [NeuralHydrology](https://github.com/neuralhydrology/neuralhydrology/tree/master/environments)  
